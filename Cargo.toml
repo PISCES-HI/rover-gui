@@ -1,0 +1,27 @@
+[package]
+name = "rover-gui"
+version = "0.1.0"
+authors = ["Theodore DeRego <tderego94@gmail.com>"]
+
+[[bin]]
+
+name="rover_gui"
+path="src/main.rs"
+
+[dependencies.piston]
+git = "https://github.com/pistondevelopers/piston"
+
+[dependencies.pistoncore-glutin_window]
+git = "https://github.com/pistondevelopers/glutin_window"
+
+[dependencies.piston2d-opengl_graphics]
+git = "https://github.com/pistondevelopers/opengl_graphics"
+
+[dependencies.piston2d-graphics]
+git = "https://github.com/pistondevelopers/graphics"
+
+[dependencies.conrod]
+git = "https://github.com/pistondevelopers/conrod"
+
+[dependencies.vecmath]
+git = "https://github.com/pistondevelopers/vecmath"
