@@ -9,6 +9,7 @@
 //!
 //!
 
+use std::net::UdpSocket;
 
 extern crate piston;
 extern crate conrod;
@@ -74,6 +75,17 @@ fn main() {
     let glyph_cache = GlyphCache::new(&font_path).unwrap();
     let mut ui = Ui::new(glyph_cache, theme);
     let mut demo = RoverUi::new();
+    
+    // Create a UDP socket to talk to the rover
+    /*let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
+    
+    let mut buf = [0; 10];
+    let (bytes_read, src) = socket.recv_from(&mut buf).unwrap();
+    
+    // Send a reply to the socket we received data from
+    let buf = &mut buf[..bytes_read];
+    buf.reverse();
+    socket.send_to(buf, &src).unwrap();*/
 
     for event in event_iter {
         ui.handle_event(&event);
@@ -93,7 +105,7 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, demo: &mut Rove
     // Draw the background.
     Background::new().color(demo.bg_color).draw(ui, gl);
 
-    // Slider widget example slider(WidgetId, value, min, max).
+    // Left RPM slider
     Slider::new(demo.l_rpm, 0.0, 100.0)
         .dimensions(200.0, 30.0)
         .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 25.0)
@@ -104,7 +116,7 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, demo: &mut Rove
         .react(|new_rpm| demo.l_rpm = new_rpm)
         .set(L_RPM_SLIDER, ui);
     
-    // Slider widget example slider(WidgetId, value, min, max).
+    // Right RPM slider
     Slider::new(demo.r_rpm, 0.0, 100.0)
         .dimensions(200.0, 30.0)
         .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 25.0)
@@ -118,7 +130,6 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, demo: &mut Rove
     // Draw our Ui!
     ui.draw(gl);
 }
-
 
 // Widget IDs
 const TITLE: WidgetId = 0;
