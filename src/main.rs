@@ -44,14 +44,17 @@ struct RoverUi {
     bg_color: Color,
     l_rpm: f32,
     r_rpm: f32,
+    
+    socket: UdpSocket,
 }
 
 impl RoverUi {
-    fn new() -> RoverUi {
+    fn new(socket: UdpSocket) -> RoverUi {
         RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             l_rpm: 0.0,
             r_rpm: 0.0,
+            socket: socket,
         }
     }
 }
@@ -74,24 +77,17 @@ fn main() {
     let theme = Theme::default();
     let glyph_cache = GlyphCache::new(&font_path).unwrap();
     let mut ui = Ui::new(glyph_cache, theme);
-    let mut demo = RoverUi::new();
     
     // Create a UDP socket to talk to the rover
-    /*let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
+    let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
     
-    let mut buf = [0; 10];
-    let (bytes_read, src) = socket.recv_from(&mut buf).unwrap();
-    
-    // Send a reply to the socket we received data from
-    let buf = &mut buf[..bytes_read];
-    buf.reverse();
-    socket.send_to(buf, &src).unwrap();*/
+    let mut rover_ui = RoverUi::new(socket);
 
     for event in event_iter {
         ui.handle_event(&event);
         if let Some(args) = event.render_args() {
             gl.draw(args.viewport(), |_, gl| {
-                draw_ui(gl, &mut ui, &mut demo);
+                draw_ui(gl, &mut ui, &mut rover_ui);
             });
         }
     }
@@ -100,35 +96,48 @@ fn main() {
 
 
 /// Draw the User Interface.
-fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, demo: &mut RoverUi) {
-
+fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut RoverUi) {
     // Draw the background.
-    Background::new().color(demo.bg_color).draw(ui, gl);
+    Background::new().color(rover_ui.bg_color).draw(ui, gl);
 
     // Left RPM slider
-    Slider::new(demo.l_rpm, 0.0, 100.0)
+    Slider::new(rover_ui.l_rpm, -1000.0, 1000.0)
         .dimensions(200.0, 30.0)
         .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 25.0)
         .rgb(0.5, 0.3, 0.6)
         .frame(1.0)
         .label("Left RPM")
         .label_color(white())
-        .react(|new_rpm| demo.l_rpm = new_rpm)
+        .react(|new_rpm| {
+            rover_ui.l_rpm = new_rpm;
+            
+            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+        })
         .set(L_RPM_SLIDER, ui);
     
     // Right RPM slider
-    Slider::new(demo.r_rpm, 0.0, 100.0)
+    Slider::new(rover_ui.r_rpm, -1000.0, 1000.0)
         .dimensions(200.0, 30.0)
         .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 25.0)
         .rgb(0.5, 0.3, 0.6)
         .frame(1.0)
         .label("Right RPM")
         .label_color(white())
-        .react(|new_rpm| demo.r_rpm = new_rpm)
+        .react(|new_rpm| {
+            rover_ui.r_rpm = new_rpm;
+            
+            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+        })
         .set(R_RPM_SLIDER, ui);
 
     // Draw our Ui!
     ui.draw(gl);
+    
+    // Do some networking
+    //let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
+    //rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
 }
 
 // Widget IDs
