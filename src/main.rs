@@ -20,6 +20,7 @@ extern crate vecmath;
 
 use conrod::{
     Background,
+    Button,
     Color,
     Colorable,
     Frameable,
@@ -131,6 +132,22 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
             rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
         })
         .set(R_RPM_SLIDER, ui);
+    
+    // Stop button
+    Button::new()
+        .dimensions(200.0, 30.0)
+        .xy(0.0, (ui.win_h / 2.0) - 25.0)
+        .rgb(1.0, 0.0, 0.0)
+        .frame(1.0)
+        .label("Stop")
+        .react(|| {
+            rover_ui.l_rpm = 0.0;
+            rover_ui.r_rpm = 0.0;
+            
+            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+        })
+        .set(STOP_BUTTON, ui);
 
     // Draw our Ui!
     ui.draw(gl);
@@ -144,3 +161,4 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
 const TITLE: WidgetId = 0;
 const L_RPM_SLIDER: WidgetId = TITLE + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
+const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
