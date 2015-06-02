@@ -1,15 +1,8 @@
-//! 
-//!
-//! A demonstration of all widgets available in Conrod.
-//!
-//!
-//! Don't be put off by the number of method calls, they are only for demonstration and almost all
-//! of them are optional. Conrod supports `Theme`s, so if you don't give it an argument, it will
-//! check the current `Theme` within the `Ui` and retrieve defaults from there.
-//!
-//!
+#![feature(convert)]
 
 use std::net::UdpSocket;
+use std::sync::mpsc::channel;
+use std::thread;
 
 extern crate piston;
 extern crate conrod;
@@ -24,6 +17,7 @@ use conrod::{
     Color,
     Colorable,
     Frameable,
+    Label,
     Labelable,
     Positionable,
     Slider,
@@ -46,6 +40,9 @@ struct RoverUi {
     l_rpm: f32,
     r_rpm: f32,
     
+    l_rpm_status: String,
+    r_rpm_status: String,
+    
     socket: UdpSocket,
 }
 
@@ -55,6 +52,8 @@ impl RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             l_rpm: 0.0,
             r_rpm: 0.0,
+            l_rpm_status: "UNAVAILABLE".to_string(),
+            r_rpm_status: "UNAVAILABLE".to_string(),
             socket: socket,
         }
     }
@@ -82,19 +81,43 @@ fn main() {
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
     
+    let in_socket = socket.try_clone().unwrap();
+    let (packet_t, packet_r) = channel();
+    
+    thread::Builder::new()
+        .name("server_master".to_string())
+        .spawn(move || {
+            let mut buf = [0u8; 64];
+            loop {
+                let (bytes_read, _) = in_socket.recv_from(&mut buf).unwrap();
+                let msg = String::from_utf8(buf[0..bytes_read].iter().cloned().collect()).unwrap();
+                packet_t.send(msg).unwrap();
+            }
+        }).unwrap();
+    
     let mut rover_ui = RoverUi::new(socket);
 
-    for event in event_iter {
-        ui.handle_event(&event);
-        if let Some(args) = event.render_args() {
+    for e in event_iter {
+        ui.handle_event(&e);
+        
+        // Update
+        e.update(|_| {
+            if let Ok(msg) = packet_r.try_recv() {
+                //println!("Got packet: {}", msg);
+                let rpm_parts: Vec<String> = msg.split(":").map(|s| s.to_string()).collect();
+                rover_ui.l_rpm_status = rpm_parts[0].clone();
+                rover_ui.r_rpm_status = rpm_parts[1].clone();
+            }
+        });
+        
+        // Render GUI
+        e.render(|args| {
             gl.draw(args.viewport(), |_, gl| {
                 draw_ui(gl, &mut ui, &mut rover_ui);
             });
-        }
+        });
     }
 }
-
-
 
 /// Draw the User Interface.
 fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut RoverUi) {
@@ -148,8 +171,22 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
             rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
         })
         .set(STOP_BUTTON, ui);
+    
+    // Left status RPM
+    Label::new(rover_ui.l_rpm_status.as_str())
+        .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
+        .font_size(32)
+        .color(rover_ui.bg_color.plain_contrast())
+        .set(L_RPM_STATUS, ui);
+    
+    // Right status RPM
+    Label::new(rover_ui.r_rpm_status.as_str())
+        .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 60.0)
+        .font_size(32)
+        .color(rover_ui.bg_color.plain_contrast())
+        .set(R_RPM_STATUS, ui);
 
-    // Draw our Ui!
+    // Draw our UI!
     ui.draw(gl);
     
     // Do some networking
@@ -162,3 +199,5 @@ const TITLE: WidgetId = 0;
 const L_RPM_SLIDER: WidgetId = TITLE + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
+const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
+const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
