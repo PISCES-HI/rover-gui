@@ -4,12 +4,12 @@ use std::net::UdpSocket;
 use std::sync::mpsc::channel;
 use std::thread;
 
+extern crate sdl2;
 extern crate piston;
 extern crate conrod;
 extern crate graphics;
 extern crate opengl_graphics;
-extern crate glutin_window;
-extern crate vecmath;
+extern crate sdl2_window;
 
 use conrod::{
     Background,
@@ -28,11 +28,12 @@ use conrod::{
     Widget,
 };
 use conrod::color::{rgb, white};
+use graphics::Context;
 use opengl_graphics::{GlGraphics, OpenGL};
 use opengl_graphics::glyph_cache::GlyphCache;
 use piston::event::*;
 use piston::window::{WindowSettings, Size};
-use glutin_window::GlutinWindow;
+use sdl2_window::Sdl2Window;
 use std::path::Path;
 
 struct RoverUi {
@@ -61,8 +62,7 @@ impl RoverUi {
 
 fn main() {
     let opengl = OpenGL::_3_2;
-    let window = GlutinWindow::new(
-        opengl,
+    let window = Sdl2Window::new(
         WindowSettings::new(
             "PISCES Rover Controller".to_string(),
             Size { width: 1100, height: 550 }
@@ -78,6 +78,9 @@ fn main() {
     let glyph_cache = GlyphCache::new(&font_path).unwrap();
     let mut ui = Ui::new(glyph_cache, theme);
     
+    // Initialize game pad
+    //init_game_pad();
+    
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
     
@@ -85,7 +88,7 @@ fn main() {
     let (packet_t, packet_r) = channel();
     
     thread::Builder::new()
-        .name("server_master".to_string())
+        .name("asdf".to_string())
         .spawn(move || {
             let mut buf = [0u8; 64];
             loop {
@@ -112,15 +115,15 @@ fn main() {
         
         // Render GUI
         e.render(|args| {
-            gl.draw(args.viewport(), |_, gl| {
-                draw_ui(gl, &mut ui, &mut rover_ui);
+            gl.draw(args.viewport(), |c, gl| {
+                draw_ui(c, gl, &mut ui, &mut rover_ui);
             });
         });
     }
 }
 
 /// Draw the User Interface.
-fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut RoverUi) {
+fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut RoverUi) {
     // Draw the background.
     Background::new().color(rover_ui.bg_color).draw(ui, gl);
 
@@ -136,7 +139,7 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
             rover_ui.l_rpm = new_rpm;
             
             let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
         })
         .set(L_RPM_SLIDER, ui);
     
@@ -152,7 +155,7 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
             rover_ui.r_rpm = new_rpm;
             
             let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
         })
         .set(R_RPM_SLIDER, ui);
     
@@ -168,7 +171,7 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
             rover_ui.r_rpm = 0.0;
             
             let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
         })
         .set(STOP_BUTTON, ui);
     
@@ -187,11 +190,56 @@ fn draw_ui<'a>(gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut 
         .set(R_RPM_STATUS, ui);
 
     // Draw our UI!
-    ui.draw(gl);
+    ui.draw(c, gl);
     
     // Do some networking
     //let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
     //rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
+}
+
+pub fn init_game_pad() {
+    use sdl2::{joystick, controller};
+    use sdl2::controller::GameController;
+
+    let available =
+        match joystick::num_joysticks() {
+            Ok(n)  => n,
+            Err(e) => panic!("can't enumerate joysticks: {}", e),
+        };
+
+    println!("{} joysticks available", available);
+
+    let mut controller = None;
+
+    // Iterate over all available joysticks and look for game
+    // controllers.
+    for id in 0..available {
+        if controller::is_game_controller(id) {
+            println!("Attempting to open controller {}", id);
+
+            match GameController::open(id) {
+                Ok(c) => {
+                    // We managed to find and open a game controller,
+                    // exit the loop
+                    println!("Success: opened \"{}\"", c.name());
+                    controller = Some(c);
+                    break;
+                },
+                Err(e) => println!("failed: {:?}", e),
+            }
+
+        } else {
+             println!("{} is not a game controller", id);
+        }
+    }
+
+    let controller =
+        match controller {
+            Some(c) => c,
+            None     => panic!("Couldn't open any controller"),
+        };
+
+    println!("Controller mapping: {}", controller.mapping());
 }
 
 // Widget IDs
