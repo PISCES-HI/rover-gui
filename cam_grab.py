@@ -89,7 +89,7 @@ def setsesid(recst,idn):
 
 # ********* (2) The routine for handling the RTP stream ***********
 
-def digestpacket(st):
+def digestpacket(packet):
   """ This routine takes a UDP packet, i.e. a string of bytes and ..
   (a) strips off the RTP header
   (b) adds NAL "stamps" to the packets, so that they are recognized as NAL's
@@ -98,7 +98,7 @@ def digestpacket(st):
   """
   startbytes=b"\x00\x00\x00\x01" # this is the sequence of four bytes that identifies a NAL packet.. must be in front of every NAL packet.
 
-  bt=bitstring.BitArray(bytes=st) # turn the whole string-of-bytes packet into a string of bits.  Very unefficient, but hey, this is only for demoing.
+  bt=bitstring.BitArray(bytes=packet) # turn the whole string-of-bytes packet into a string of bits.  Very unefficient, but hey, this is only for demoing.
   lc=12 # bytecounter
   bc=12*8 # bitcounter
 
@@ -121,7 +121,7 @@ def digestpacket(st):
   print("sequence number, timestamp",sn,timestamp)
   print("sync. source identifier",ssrc)
 
-  # st=f.read(4*cc) # csrc identifiers, 32 bits (4 bytes) each
+  # packet=f.read(4*cc) # csrc identifiers, 32 bits (4 bytes) each
   cids=[]
   for i in range(cc):
     cids.append(bt[bc:bc+32].uint)
@@ -198,44 +198,47 @@ def digestpacket(st):
   typ=bt[bc+3:bc+8].uint # "Type"
   print("F, NRI, Type :", fb, nri, typ)
   print("first three bits together :", bt[bc:bc+3])
+  
+  # header for output packet
+  head = b""
 
-  if (typ==7 or typ==8):
+  if typ == 1:
+    print("single NAL unit packet")
+    lc += 1 # Skip the first byte of the packet (NAL unit header)
+    head = startbytes
+  elif typ == 7 or typ == 8:
     # this means we have either an SPS or a PPS packet
     # they have the meta-info about resolution, etc.
     # more reading for example here:
     # http://www.cardinalpeak.com/blog/the-h-264-sequence-parameter-set/
+    # notice here that we include the NAL starting sequence "startbytes" and the "First byte"
     if (typ==7):
       print(">>>>> SPS packet")
     else:
       print(">>>>> PPS packet")
-    return startbytes+st[lc:]
-    # .. notice here that we include the NAL starting sequence "startbytes" and the "First byte"
+    head = startbytes
+  elif typ == 28: # This code only handles "Type" = 28, i.e. "FU-A"
+    bc+=8; # Bring bit counter to second byte
+    lc += 2 # Skip first 2 bytes in packet (FU indicator (NAL unit header) and FU header)
+    
+    # ********* WE ARE AT THE "Second byte" ************
+    # The "Type" here is most likely 28, i.e. "FU-A"
+    start=bt[bc] # start bit
+    end=bt[bc+2] # end bit
+    nlu1=bt[bc+3:bc+8] # 5 nal unit bits
 
-  bc+=8; lc+=1; # let's go to "Second byte"
-  # ********* WE ARE AT THE "Second byte" ************
-  # The "Type" here is most likely 28, i.e. "FU-A"
-  start=bt[bc] # start bit
-  end=bt[bc+2] # end bit
-  nlu1=bt[bc+3:bc+8] # 5 nal unit bits
-
-  if (start): # OK, this is a first fragment in a movie frame
-    print(">>> first fragment found")
-    nlu=nlu0+nlu1 # Create "[3 NAL UNIT BITS | 5 NAL UNIT BITS]"
-    head=startbytes+nlu.bytes # .. add the NAL starting sequence
-    lc+=1 # We skip the "Second byte")
-  if (start==False and end==False): # intermediate fragment in a sequence, just dump "VIDEO FRAGMENT DATA"
-    head=b""
-    lc+=1 # We skip the "Second byte"
-  elif (end==True): # last fragment in a sequence, just dump "VIDEO FRAGMENT DATA"
-    head=b""
-    print("<<<< last fragment found")
-    lc+=1 # We skip the "Second byte"
-
-  if (typ==28): # This code only handles "Type" = 28, i.e. "FU-A"
-    return head+st[lc:]
+    if start: # OK, this is a first fragment in a movie frame
+      print(">>> first fragment found")
+      nlu = nlu0 + nlu1 # Create "[3 NAL UNIT BITS | 5 NAL UNIT BITS]"
+      head = startbytes + nlu.bytes # .. add the NAL starting sequence
+    elif end == False: # intermediate fragment in a sequence, just dump "VIDEO FRAGMENT DATA"
+      print("intermediate fragment found")
+    elif end == True: # last fragment in a sequence, just dump "VIDEO FRAGMENT DATA"
+      print("<<<< last fragment found")
   else:
-    return b''
-    ##raise(Exception,"unknown frame type for this piece of s***")
+    raise(Exception, "unknown frame type")
+  
+  return head + packet[lc:]
 
 
 
