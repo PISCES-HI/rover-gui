@@ -4,10 +4,7 @@ use std::net::UdpSocket;
 use std::sync::mpsc::channel;
 use std::thread;
 
-use sdl2::controller::{
-    Axis,
-    GameController,
-};
+use sdl2::controller;
 
 extern crate sdl2;
 extern crate piston;
@@ -44,14 +41,18 @@ use std::path::Path;
 
 struct RoverUi {
     bg_color: Color,
+    
+    // RPM stuff
     l_rpm: f32,
     r_rpm: f32,
     both_rpm: bool,
-    
     max_rpm: f32,
-    
     l_rpm_status: String,
     r_rpm_status: String,
+    
+    // Forward camera controls
+    f_pan: f32,
+    f_tilt: f32,
     
     socket: UdpSocket,
 }
@@ -60,14 +61,17 @@ impl RoverUi {
     fn new(socket: UdpSocket) -> RoverUi {
         RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
+            
             l_rpm: 0.0,
             r_rpm: 0.0,
             both_rpm: false,
-            
             max_rpm: 2000.0,
-            
             l_rpm_status: "UNAVAILABLE".to_string(),
             r_rpm_status: "UNAVAILABLE".to_string(),
+            
+            f_pan: 90.0,
+            f_tilt: 130.0,
+            
             socket: socket,
         }
     }
@@ -89,6 +93,57 @@ impl RoverUi {
             _ => { },
         }
     }
+    
+    pub fn try_update_rpm(&mut self, l_rpm: f32, r_rpm: f32) {
+        if (l_rpm - self.l_rpm).abs() > 5.0 || (r_rpm - self.r_rpm).abs() > 5.0 {
+            self.l_rpm = l_rpm;
+            self.r_rpm = r_rpm;
+            self.send_rpm();
+        }
+    }
+    
+    pub fn try_update_l_rpm(&mut self, l_rpm: f32) {
+        if (l_rpm - self.l_rpm).abs() > 5.0 {
+            self.l_rpm = l_rpm;
+            self.send_rpm();
+        }
+    }
+    
+    pub fn try_update_r_rpm(&mut self, r_rpm: f32) {
+        if (r_rpm - self.r_rpm).abs() > 5.0 {
+            self.r_rpm = r_rpm;
+            self.send_rpm();
+        }
+    }
+    
+    pub fn try_update_f_pan(&mut self, f_pan: f32) {
+        if (f_pan - self.f_pan).abs() > 5.0 || f_pan == 0.0 || f_pan == 180.0 {
+            self.f_pan = f_pan;
+            self.send_f_pan();
+        }
+    }
+    
+    pub fn try_update_f_tilt(&mut self, f_tilt: f32) {
+        if (f_tilt - self.f_tilt).abs() > 5.0 || f_tilt == 90.0 || f_tilt == 180.0 {
+            self.f_tilt = f_tilt;
+            self.send_f_tilt();
+        }
+    }
+    
+    fn send_rpm(&self) {
+        let packet = format!("A{}:{}", self.l_rpm as i32, self.r_rpm as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+    }
+    
+    fn send_f_pan(&self) {
+        let packet = format!("B{}", self.f_pan as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+    }
+    
+    fn send_f_tilt(&self) {
+        let packet = format!("C{}", self.f_tilt as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+    }
 }
 
 fn main() {
@@ -101,7 +156,7 @@ fn main() {
         .exit_on_esc(true)
         .samples(4)
     );
-    let event_iter = window.events().ups(60).max_fps(60);
+    let event_iter = window.events().ups(20).max_fps(60);
     let mut gl = GlGraphics::new(opengl);
 
     let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
@@ -119,7 +174,7 @@ fn main() {
     let (packet_t, packet_r) = channel();
     
     thread::Builder::new()
-        .name("asdf".to_string())
+        .name("packet_in".to_string())
         .spawn(move || {
             let mut buf = [0u8; 64];
             loop {
@@ -130,6 +185,9 @@ fn main() {
         }).unwrap();
     
     let mut rover_ui = RoverUi::new(socket);
+    rover_ui.send_rpm();
+    rover_ui.send_f_pan();
+    rover_ui.send_f_tilt();
 
     for e in event_iter {
         ui.handle_event(&e);
@@ -150,7 +208,7 @@ fn main() {
         
         // Update
         e.update(|_| {
-            if let Ok(msg) = packet_r.try_recv() {
+            while let Ok(msg) = packet_r.try_recv() {
                 //println!("Got packet: {}", msg);
                 let rpm_parts: Vec<String> = msg.split(":").map(|s| s.to_string()).collect();
                 rover_ui.l_rpm_status = rpm_parts[0].clone();
@@ -158,18 +216,33 @@ fn main() {
             }
             
             if let Some(ref controller) = controller {
-                let left_y = controller.get_axis(Axis::LeftY).unwrap();
-                let right_y = controller.get_axis(Axis::RightY).unwrap();
+                // Control RPM with analog sticks
+                let left_y = controller.get_axis(controller::Axis::LeftY).unwrap();
+                let right_y = controller.get_axis(controller::Axis::RightY).unwrap();
                 
                 let l_rpm = -(left_y as f32 / 32768.0) * rover_ui.max_rpm;
                 let r_rpm = -(right_y as f32 / 32768.0) * rover_ui.max_rpm;
                 
-                if (l_rpm - rover_ui.l_rpm).abs() > 5.0 || (r_rpm - rover_ui.r_rpm).abs() > 5.0 {
-                    rover_ui.l_rpm = l_rpm;
-                    rover_ui.r_rpm = r_rpm;
-                    
-                    let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-                    rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+                rover_ui.try_update_rpm(l_rpm, r_rpm);
+                
+                // Control pan with left/right arrow keys
+                if controller.get_button(controller::Button::DPadLeft).unwrap() {
+                    rover_ui.f_pan -= f32::min(5.0, rover_ui.f_pan - 0.0);
+                    rover_ui.send_f_pan();
+                }
+                if controller.get_button(controller::Button::DPadRight).unwrap() {
+                    rover_ui.f_pan += f32::min(5.0, 180.0 - rover_ui.f_pan);
+                    rover_ui.send_f_pan();
+                }
+                
+                // Control tilt with up/down arrow keys
+                if controller.get_button(controller::Button::DPadDown).unwrap() {
+                    rover_ui.f_tilt -= f32::min(5.0, rover_ui.f_tilt - 90.0);
+                    rover_ui.send_f_tilt();
+                }
+                if controller.get_button(controller::Button::DPadUp).unwrap() {
+                    rover_ui.f_tilt += f32::min(5.0, 180.0 - rover_ui.f_tilt);
+                    rover_ui.send_f_tilt();
                 }
             }
         });
@@ -203,13 +276,11 @@ fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rov
         .label("Left RPM")
         .label_color(white())
         .react(|new_rpm| {
-            rover_ui.l_rpm = new_rpm;
-            if rover_ui.both_rpm {
-                rover_ui.r_rpm = new_rpm;
+            if !rover_ui.both_rpm {
+                rover_ui.try_update_l_rpm(new_rpm);
+            } else {
+                rover_ui.try_update_rpm(new_rpm, new_rpm);
             }
-            
-            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
         })
         .set(L_RPM_SLIDER, ui);
     
@@ -228,13 +299,11 @@ fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rov
         .label("Right RPM")
         .label_color(white())
         .react(|new_rpm| {
-            rover_ui.r_rpm = new_rpm;
-            if rover_ui.both_rpm {
-                rover_ui.l_rpm = new_rpm;
+            if !rover_ui.both_rpm {
+                rover_ui.try_update_r_rpm(new_rpm);
+            } else {
+                rover_ui.try_update_rpm(new_rpm, new_rpm);
             }
-            
-            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
         })
         .set(R_RPM_SLIDER, ui);
     
@@ -248,9 +317,7 @@ fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rov
         .react(|| {
             rover_ui.l_rpm = 0.0;
             rover_ui.r_rpm = 0.0;
-            
-            let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-            rover_ui.socket.send_to(rpm_packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+            rover_ui.send_rpm();
         })
         .set(STOP_BUTTON, ui);
     
@@ -267,16 +334,38 @@ fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rov
         .font_size(32)
         .color(rover_ui.bg_color.plain_contrast())
         .set(R_RPM_STATUS, ui);
+    
+    // Camera pan slider
+    Slider::new(rover_ui.f_pan, 0.0, 180.0)
+        .dimensions(200.0, 30.0)
+        .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 110.0)
+        .rgb(0.5, 0.3, 0.6)
+        .frame(1.0)
+        .label("Forward Pan")
+        .label_color(white())
+        .react(|new_pan| {
+            rover_ui.try_update_f_pan(new_pan);
+        })
+        .set(F_PAN_SLIDER, ui);
+    
+    // Camera tilt slider
+    Slider::new(rover_ui.f_tilt, 90.0, 180.0)
+        .dimensions(200.0, 30.0)
+        .xy(110.0 - (ui.win_w / 2.0) + 210.0, (ui.win_h / 2.0) - 110.0)
+        .rgb(0.5, 0.3, 0.6)
+        .frame(1.0)
+        .label("Forward Tilt")
+        .label_color(white())
+        .react(|new_tilt| {
+            rover_ui.try_update_f_tilt(new_tilt);
+        })
+        .set(F_TILT_SLIDER, ui);
 
     // Draw our UI!
     ui.draw(c, gl);
-    
-    // Do some networking
-    //let rpm_packet = format!("{}:{}", rover_ui.l_rpm as i32, rover_ui.r_rpm as i32);
-    //rover_ui.socket.send_to(rpm_packet.as_bytes(), ("192.168.240.1", 30001)).unwrap();
 }
 
-pub fn init_game_pad() -> Option<GameController> {
+pub fn init_game_pad() -> Option<controller::GameController> {
     use sdl2::{joystick, controller};
     
     println!("Looking for game controller...");
@@ -295,7 +384,7 @@ pub fn init_game_pad() -> Option<GameController> {
         if controller::is_game_controller(id) {
             println!("Attempting to open game controller {}", id);
 
-            match GameController::open(id) {
+            match controller::GameController::open(id) {
                 Ok(c) => {
                     // We managed to find and open a game controller,
                     // exit the loop
@@ -320,3 +409,5 @@ const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
+const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
+const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
