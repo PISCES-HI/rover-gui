@@ -242,7 +242,7 @@ def digestpacket(packet):
       print(">>> first fragment found")
       nlu = nlu0 + nlu1 # Create "[3 NAL UNIT BITS | 5 NAL UNIT BITS]"
 
-      head = b"\x00"
+      #head = b"\x00"
       if nlu.uint > 5:
         if nlu.uint == 6:
           head = b"\x00"

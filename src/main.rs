@@ -54,6 +54,9 @@ struct RoverUi {
     f_pan: f32,
     f_tilt: f32,
     
+    // Blade controls
+    blade: f32,
+    
     socket: UdpSocket,
 }
 
@@ -71,6 +74,8 @@ impl RoverUi {
             
             f_pan: 90.0,
             f_tilt: 130.0,
+            
+            blade: 0.0,
             
             socket: socket,
         }
@@ -130,6 +135,13 @@ impl RoverUi {
         }
     }
     
+    pub fn try_update_blade(&mut self, blade: f32) {
+        if (blade - self.blade).abs() > 1.0 || blade == -10.0 || blade == 10.0 {
+            self.blade = blade;
+            self.send_blade();
+        }
+    }
+    
     fn send_rpm(&self) {
         let packet = format!("A{}:{}", self.l_rpm as i32, self.r_rpm as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
@@ -143,6 +155,132 @@ impl RoverUi {
     fn send_f_tilt(&self) {
         let packet = format!("C{}", self.f_tilt as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+    }
+    
+    fn send_blade(&self) {
+        let packet = format!("D{}", self.blade as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+    }
+    
+    fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
+        // Draw the background.
+        Background::new().color(self.bg_color).draw(ui, gl);
+
+        // Left RPM slider
+        let l_rpm =
+            if self.both_rpm {
+                self.l_rpm.max(self.r_rpm)
+            } else {
+                self.l_rpm
+            };
+        Slider::new(l_rpm, -self.max_rpm, self.max_rpm)
+            .dimensions(200.0, 30.0)
+            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 25.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Left RPM")
+            .label_color(white())
+            .react(|new_rpm| {
+                if !self.both_rpm {
+                    self.try_update_l_rpm(new_rpm);
+                } else {
+                    self.try_update_rpm(new_rpm, new_rpm);
+                }
+            })
+            .set(L_RPM_SLIDER, ui);
+        
+        // Right RPM slider
+        let r_rpm =
+            if self.both_rpm {
+                self.l_rpm.max(self.r_rpm)
+            } else {
+                self.r_rpm
+            };
+        Slider::new(r_rpm, -self.max_rpm, self.max_rpm)
+            .dimensions(200.0, 30.0)
+            .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 25.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Right RPM")
+            .label_color(white())
+            .react(|new_rpm| {
+                if !self.both_rpm {
+                    self.try_update_r_rpm(new_rpm);
+                } else {
+                    self.try_update_rpm(new_rpm, new_rpm);
+                }
+            })
+            .set(R_RPM_SLIDER, ui);
+        
+        // Stop button
+        Button::new()
+            .dimensions(200.0, 30.0)
+            .xy(0.0, (ui.win_h / 2.0) - 25.0)
+            .rgb(1.0, 0.0, 0.0)
+            .frame(1.0)
+            .label("Stop")
+            .react(|| {
+                self.l_rpm = 0.0;
+                self.r_rpm = 0.0;
+                self.send_rpm();
+            })
+            .set(STOP_BUTTON, ui);
+        
+        // Left status RPM
+        Label::new(self.l_rpm_status.as_str())
+            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
+            .font_size(32)
+            .color(self.bg_color.plain_contrast())
+            .set(L_RPM_STATUS, ui);
+        
+        // Right status RPM
+        Label::new(self.r_rpm_status.as_str())
+            .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 60.0)
+            .font_size(32)
+            .color(self.bg_color.plain_contrast())
+            .set(R_RPM_STATUS, ui);
+        
+        // Camera pan slider
+        Slider::new(self.f_pan, 0.0, 180.0)
+            .dimensions(200.0, 30.0)
+            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 110.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Forward Pan")
+            .label_color(white())
+            .react(|new_pan| {
+                self.try_update_f_pan(new_pan);
+            })
+            .set(F_PAN_SLIDER, ui);
+        
+        // Camera tilt slider
+        Slider::new(self.f_tilt, 90.0, 180.0)
+            .dimensions(200.0, 30.0)
+            .xy(110.0 - (ui.win_w / 2.0) + 210.0, (ui.win_h / 2.0) - 110.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Forward Tilt")
+            .label_color(white())
+            .react(|new_tilt| {
+                self.try_update_f_tilt(new_tilt);
+            })
+            .set(F_TILT_SLIDER, ui);
+        
+        // Camera tilt slider
+        Slider::new(self.blade, -10.0, 10.0)
+            .dimensions(200.0, 30.0)
+            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 160.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Blade")
+            .label_color(white())
+            .react(|new_blade| {
+                self.try_update_blade(new_blade);
+            })
+            .set(BLADE_SLIDER, ui);
+
+        // Draw our UI!
+        ui.draw(c, gl);
     }
 }
 
@@ -250,119 +388,10 @@ fn main() {
         // Render GUI
         e.render(|args| {
             gl.draw(args.viewport(), |c, gl| {
-                draw_ui(c, gl, &mut ui, &mut rover_ui);
+                rover_ui.draw_ui(c, gl, &mut ui);
             });
         });
     }
-}
-
-/// Draw the User Interface.
-fn draw_ui<'a>(c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>, rover_ui: &mut RoverUi) {
-    // Draw the background.
-    Background::new().color(rover_ui.bg_color).draw(ui, gl);
-
-    // Left RPM slider
-    let l_rpm =
-        if rover_ui.both_rpm {
-            rover_ui.l_rpm.max(rover_ui.r_rpm)
-        } else {
-            rover_ui.l_rpm
-        };
-    Slider::new(l_rpm, -rover_ui.max_rpm, rover_ui.max_rpm)
-        .dimensions(200.0, 30.0)
-        .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 25.0)
-        .rgb(0.5, 0.3, 0.6)
-        .frame(1.0)
-        .label("Left RPM")
-        .label_color(white())
-        .react(|new_rpm| {
-            if !rover_ui.both_rpm {
-                rover_ui.try_update_l_rpm(new_rpm);
-            } else {
-                rover_ui.try_update_rpm(new_rpm, new_rpm);
-            }
-        })
-        .set(L_RPM_SLIDER, ui);
-    
-    // Right RPM slider
-    let r_rpm =
-        if rover_ui.both_rpm {
-            rover_ui.l_rpm.max(rover_ui.r_rpm)
-        } else {
-            rover_ui.r_rpm
-        };
-    Slider::new(r_rpm, -rover_ui.max_rpm, rover_ui.max_rpm)
-        .dimensions(200.0, 30.0)
-        .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 25.0)
-        .rgb(0.5, 0.3, 0.6)
-        .frame(1.0)
-        .label("Right RPM")
-        .label_color(white())
-        .react(|new_rpm| {
-            if !rover_ui.both_rpm {
-                rover_ui.try_update_r_rpm(new_rpm);
-            } else {
-                rover_ui.try_update_rpm(new_rpm, new_rpm);
-            }
-        })
-        .set(R_RPM_SLIDER, ui);
-    
-    // Stop button
-    Button::new()
-        .dimensions(200.0, 30.0)
-        .xy(0.0, (ui.win_h / 2.0) - 25.0)
-        .rgb(1.0, 0.0, 0.0)
-        .frame(1.0)
-        .label("Stop")
-        .react(|| {
-            rover_ui.l_rpm = 0.0;
-            rover_ui.r_rpm = 0.0;
-            rover_ui.send_rpm();
-        })
-        .set(STOP_BUTTON, ui);
-    
-    // Left status RPM
-    Label::new(rover_ui.l_rpm_status.as_str())
-        .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
-        .font_size(32)
-        .color(rover_ui.bg_color.plain_contrast())
-        .set(L_RPM_STATUS, ui);
-    
-    // Right status RPM
-    Label::new(rover_ui.r_rpm_status.as_str())
-        .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 60.0)
-        .font_size(32)
-        .color(rover_ui.bg_color.plain_contrast())
-        .set(R_RPM_STATUS, ui);
-    
-    // Camera pan slider
-    Slider::new(rover_ui.f_pan, 0.0, 180.0)
-        .dimensions(200.0, 30.0)
-        .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 110.0)
-        .rgb(0.5, 0.3, 0.6)
-        .frame(1.0)
-        .label("Forward Pan")
-        .label_color(white())
-        .react(|new_pan| {
-            rover_ui.try_update_f_pan(new_pan);
-        })
-        .set(F_PAN_SLIDER, ui);
-    
-    // Camera tilt slider
-    Slider::new(rover_ui.f_tilt, 90.0, 180.0)
-        .dimensions(200.0, 30.0)
-        .xy(110.0 - (ui.win_w / 2.0) + 210.0, (ui.win_h / 2.0) - 110.0)
-        .rgb(0.5, 0.3, 0.6)
-        .frame(1.0)
-        .label("Forward Tilt")
-        .label_color(white())
-        .react(|new_tilt| {
-            rover_ui.try_update_f_tilt(new_tilt);
-        })
-        .set(F_TILT_SLIDER, ui);
-
-    // Draw our UI!
-    ui.draw(c, gl);
 }
 
 pub fn init_game_pad() -> Option<controller::GameController> {
@@ -411,3 +440,4 @@ const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
 const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
+const BLADE_SLIDER: WidgetId = F_TILT_SLIDER + 1;
