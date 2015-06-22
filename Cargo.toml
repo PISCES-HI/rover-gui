@@ -26,9 +26,15 @@ git = "https://github.com/pistondevelopers/conrod"
 #[dependencies.vecmath]
 #git = "https://github.com/pistondevelopers/vecmath"
 
+[dependencies.ffmpeg]
+git = "https://github.com/tedsta/rust-ffmpeg"
+features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+default-features = false
+
 [dependencies]
 
 sdl2 = "0.4"
 piston = "0.1.4"
 piston2d-graphics = "0.1.4"
 piston2d-opengl_graphics = "0.1.0"
+image = "*"
