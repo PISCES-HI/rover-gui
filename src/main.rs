@@ -1,6 +1,7 @@
 #![feature(convert)]
 
 use std::net::UdpSocket;
+use std::ops::DerefMut;
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -49,6 +50,10 @@ use ffmpeg::util::format::pixel::Pixel;
 use ffmpeg::frame;
 use image::RgbaImage;
 
+use line_graph::LineGraph;
+
+pub mod line_graph;
+
 struct RoverUi {
     bg_color: Color,
     
@@ -67,11 +72,18 @@ struct RoverUi {
     // Blade controls
     blade: f32,
     
+    voltage_graph: LineGraph,
+    
     socket: UdpSocket,
 }
 
 impl RoverUi {
     fn new(socket: UdpSocket) -> RoverUi {
+        let mut voltage_graph = LineGraph::new((200.0, 100.0), (-20.0, 20.0), (0.0, 10.0));
+        voltage_graph.add_point(-10.0, 1.0);
+        voltage_graph.add_point(0.0, 7.0);
+        voltage_graph.add_point(15.0, 4.0);
+    
         RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             
@@ -86,6 +98,8 @@ impl RoverUi {
             f_tilt: 130.0,
             
             blade: 0.0,
+            
+            voltage_graph: voltage_graph,
             
             socket: socket,
         }
@@ -173,6 +187,8 @@ impl RoverUi {
     }
     
     fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
+        use graphics::*;
+    
         // Draw the background.
         Background::new().color(self.bg_color).draw(ui, gl);
 
@@ -291,6 +307,9 @@ impl RoverUi {
 
         // Draw our UI!
         ui.draw(c, gl);
+        
+        // Draw telemetry graphs
+        self.voltage_graph.draw(c.trans(50.0, 200.0), gl, ui.glyph_cache.borrow_mut().deref_mut());
     }
 }
 
