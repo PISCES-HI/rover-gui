@@ -2,6 +2,7 @@
 
 use std::net::UdpSocket;
 use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -315,6 +316,7 @@ impl RoverUi {
 
 fn main() {
     ffmpeg::init().unwrap();
+    ffmpeg::format::network::init();
 
     let opengl = OpenGL::_3_2;
     let window = Sdl2Window::new(
@@ -360,58 +362,57 @@ fn main() {
     
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let mut format_context = format::open(&"data/stream.h264".to_string()).unwrap();
-    format::dump(&format_context, 0, Some("data/stream.h264"));
+    let rgba_img = RgbaImage::new(512, 512);
+    let mut video_texture = Texture::from_image(&rgba_img);
+    let mut rgba_img = Arc::new(Mutex::new(rgba_img));
     
-    let stream_codec =
-        format_context.streams()
-                      .filter(|stream| stream.codec().medium() == media::Type::Video)
-                      .next().expect("No video streams in stream")
-                      .codec();
-    let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
-    
-    let codec_context = stream_codec.clone().open(&video_codec).unwrap();
-    
-    let mut decoder = codec_context.decoder().unwrap().video().unwrap();
-    let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
-                                            Pixel::RGBA, 512, 512,
-                                            scaling::flag::BILINEAR).unwrap();
-    
-    let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
-    let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
-    
-    let mut video_packets = format_context.packets();
-    
-    let mut rgba_img = RgbaImage::new(512, 512);
-    
-    let mut decode_frame = |rgba_img: &mut RgbaImage| {
-        if let Some((_, packet)) = video_packets.next() {
-            decoder.decode(&packet, &mut input_frame).unwrap();
+    let thread_rgba_img = rgba_img.clone();
+    thread::Builder::new()
+        .name("video_packet_in".to_string())
+        .spawn(move || {
+            let mut format_context = format::open(&"rtsp://10.10.153.26/axis-media/media.amp".to_string()).unwrap();
+            format::dump(&format_context, 0, Some("rtsp://10.10.153.26/axis-media/media.amp"));
             
-            sws_context.run(&input_frame, &mut output_frame);
+            let stream_codec =
+                format_context.streams()
+                              .filter(|stream| stream.codec().medium() == media::Type::Video)
+                              .next().expect("No video streams in stream")
+                              .codec();
+            let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
             
-            //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
-            for line in output_frame.data().iter() {
-                //buf.reserve(line.len());
-                unsafe {
-                    //let buf_len = buf.len();
-                    //buf.set_len(buf_len + line.len());
-                    let src: *const u8 = std::mem::transmute(line.get(0));
-                    //let dst: *mut u8 = std::mem::transmute(buf.get_mut(buf_len));
-                    let dst = rgba_img.as_mut_ptr();
-                    std::ptr::copy(src, dst, line.len());
+            let codec_context = stream_codec.clone().open(&video_codec).unwrap();
+            
+            let mut decoder = codec_context.decoder().unwrap().video().unwrap();
+            let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
+                                                    Pixel::RGBA, 512, 512,
+                                                    scaling::flag::BILINEAR).unwrap();
+            
+            let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
+            let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
+            
+            let mut video_packets = format_context.packets();
+    
+            for (_, packet) in video_packets {
+                decoder.decode(&packet, &mut input_frame).unwrap();
+                
+                sws_context.run(&input_frame, &mut output_frame);
+                
+                //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
+                for line in output_frame.data().iter() {
+                    let mut rgba_img = thread_rgba_img.lock().unwrap();
+                
+                    //buf.reserve(line.len());
+                    unsafe {
+                        //let buf_len = buf.len();
+                        //buf.set_len(buf_len + line.len());
+                        let src: *const u8 = std::mem::transmute(line.get(0));
+                        //let dst: *mut u8 = std::mem::transmute(buf.get_mut(buf_len));
+                        let dst = rgba_img.as_mut_ptr();
+                        std::ptr::copy(src, dst, line.len());
+                    }
                 }
             }
-            
-            //return Some(RgbaImage::from_raw(512, 512, buf).unwrap());
-            
-            /*img.save(format!("frame{}.png", i));*/
-        }
-        
-        //None
-    };
-    
-    let mut video_texture = Texture::from_image(&rgba_img);
+        }).unwrap();
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -471,9 +472,9 @@ fn main() {
                     rover_ui.send_f_tilt();
                 }
             }
-
-            decode_frame(&mut rgba_img);
-            video_texture.update(&rgba_img);
+            
+            let rgba_img = rgba_img.lock().unwrap();
+            video_texture.update(&*rgba_img);
         });
         
         // Render GUI
