@@ -33,6 +33,7 @@ default-features = false
 
 [dependencies]
 
+time = "0.1.*"
 sdl2 = "0.4"
 piston = "0.1.4"
 piston2d-graphics = "0.1.4"

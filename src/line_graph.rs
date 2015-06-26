@@ -39,8 +39,8 @@ impl LineGraph {
             
             if x >= self.x_interval.0 && last_x <= self.x_interval.1 {
                 Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                    .draw([last_x_norm * self.size.0, last_y_norm * self.size.1,
-                           x_norm * self.size.0, y_norm * self.size.1],
+                    .draw([last_x_norm * self.size.0, self.size.1 - last_y_norm*self.size.1,
+                           x_norm * self.size.0, self.size.1 - y_norm*self.size.1],
                           &c.draw_state, c.transform,
                           gl);
             }
@@ -51,5 +51,9 @@ impl LineGraph {
         if self.points.len() == 0 || self.points[self.points.len()-1].0 < x {
             self.points.push((x, y));
         }
+    }
+    
+    pub fn num_points(&self) -> usize {
+        self.points.len()
     }
 }

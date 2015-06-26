@@ -8,6 +8,7 @@ use std::thread;
 
 use sdl2::controller;
 
+extern crate time;
 extern crate sdl2;
 extern crate piston;
 extern crate conrod;
@@ -58,6 +59,8 @@ pub mod line_graph;
 struct RoverUi {
     bg_color: Color,
     
+    start_time: time::Tm,
+    
     // RPM stuff
     l_rpm: f32,
     r_rpm: f32,
@@ -80,13 +83,12 @@ struct RoverUi {
 
 impl RoverUi {
     fn new(socket: UdpSocket) -> RoverUi {
-        let mut voltage_graph = LineGraph::new((200.0, 100.0), (-20.0, 20.0), (0.0, 10.0));
-        voltage_graph.add_point(-10.0, 1.0);
-        voltage_graph.add_point(0.0, 7.0);
-        voltage_graph.add_point(15.0, 4.0);
+        let mut voltage_graph = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
     
         RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
+            
+            start_time: time::now(),
             
             l_rpm: 0.0,
             r_rpm: 0.0,
@@ -305,12 +307,36 @@ impl RoverUi {
                 self.try_update_blade(new_blade);
             })
             .set(BLADE_SLIDER, ui);
+        
+        // 12v bus label
+        Label::new("12v Bus")
+            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 215.0)
+            .font_size(32)
+            .color(self.bg_color.plain_contrast())
+            .set(VOLTAGE_12_LABEL, ui);
+        
+        // Mission time label
+        let mission_time = time::now() - self.start_time;
+        let total_hours = mission_time.num_hours();
+        let total_minutes = mission_time.num_minutes();
+        let total_seconds = mission_time.num_seconds();
+        let total_milliseconds = mission_time.num_milliseconds();
+        
+        let hours = total_hours;
+        let minutes = total_minutes - total_hours*60;
+        let seconds = total_seconds - total_minutes*60;
+        let milliseconds = total_milliseconds - total_seconds*1000;
+        Label::new(format!("Mission Time: {}:{}:{}:{}", hours, minutes, seconds, milliseconds).as_str())
+            .xy(0.0, (-ui.win_h / 2.0) + 35.0)
+            .font_size(32)
+            .color(self.bg_color.plain_contrast())
+            .set(MISSION_TIME_LABEL, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
         
         // Draw telemetry graphs
-        self.voltage_graph.draw(c.trans(50.0, 200.0), gl, ui.glyph_cache.borrow_mut().deref_mut());
+        self.voltage_graph.draw(c.trans(5.0, 250.0), gl, ui.glyph_cache.borrow_mut().deref_mut());
     }
 }
 
@@ -350,8 +376,9 @@ fn main() {
             let mut buf = [0u8; 64];
             loop {
                 let (bytes_read, _) = in_socket.recv_from(&mut buf).unwrap();
-                let msg = String::from_utf8(buf[0..bytes_read].iter().cloned().collect()).unwrap();
-                packet_t.send(msg).unwrap();
+                if let Ok(msg) = String::from_utf8(buf[0..bytes_read].iter().cloned().collect()) {
+                    packet_t.send(msg).unwrap();
+                }
             }
         }).unwrap();
     
@@ -371,6 +398,14 @@ fn main() {
         .name("video_packet_in".to_string())
         .spawn(move || {
             let mut format_context = format::open(&"rtsp://10.10.153.26/axis-media/media.amp".to_string()).unwrap();
+            
+            unsafe {
+                println!("ANALYZE {}", (*format_context.as_mut_ptr()).max_analyze_duration);
+                println!("ANALYZE2 {}", (*format_context.as_mut_ptr()).max_analyze_duration2);
+                (*format_context.as_mut_ptr()).max_analyze_duration = 100000;
+                (*format_context.as_mut_ptr()).max_analyze_duration2 = 100000;
+            }
+            
             format::dump(&format_context, 0, Some("rtsp://10.10.153.26/axis-media/media.amp"));
             
             let stream_codec =
@@ -437,9 +472,23 @@ fn main() {
         e.update(|_| {
             while let Ok(msg) = packet_r.try_recv() {
                 //println!("Got packet: {}", msg);
-                let rpm_parts: Vec<String> = msg.split(":").map(|s| s.to_string()).collect();
-                rover_ui.l_rpm_status = rpm_parts[0].clone();
-                rover_ui.r_rpm_status = rpm_parts[1].clone();
+                let packet_parts: Vec<String> = msg.split(":").map(|s| s.to_string()).collect();
+                
+                match packet_parts[0].as_str() {
+                    "RPM_STATUS" => {
+                        rover_ui.l_rpm_status = packet_parts[1].clone();
+                        rover_ui.r_rpm_status = packet_parts[2].clone();
+                    },
+                    "12V_VOLTAGE" => {
+                        let point_x = rover_ui.voltage_graph.num_points() as f64;
+                        rover_ui.voltage_graph.add_point(point_x, packet_parts[1].parse().unwrap());
+                        if rover_ui.voltage_graph.num_points() > 100 {
+                            rover_ui.voltage_graph.x_interval = ((rover_ui.voltage_graph.num_points() - 100) as f64,
+                                                                 rover_ui.voltage_graph.num_points() as f64);
+                        }
+                    },
+                    _ => { println!("Unknown packet ID: {}", packet_parts[0]) },
+                }
             }
             
             if let Some(ref controller) = controller {
@@ -484,7 +533,7 @@ fn main() {
             
                 rover_ui.draw_ui(c, gl, &mut ui);
                 
-                image(&video_texture, c.trans(500.0, 150.0).transform, gl);
+                image(&video_texture, c.trans(500.0, 120.0).transform, gl);
             });
         });
     }
@@ -537,3 +586,5 @@ const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
 const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const BLADE_SLIDER: WidgetId = F_TILT_SLIDER + 1;
+const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;
+const MISSION_TIME_LABEL: WidgetId = VOLTAGE_12_LABEL + 1;
