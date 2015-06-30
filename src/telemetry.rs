@@ -2,7 +2,6 @@
 
 use std::net::UdpSocket;
 use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -15,8 +14,6 @@ extern crate conrod;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate sdl2_window;
-extern crate ffmpeg;
-extern crate image;
 
 use conrod::{
     Background,
@@ -36,21 +33,13 @@ use conrod::{
 };
 use conrod::color::{rgb, white};
 use graphics::Context;
-use opengl_graphics::{GlGraphics, OpenGL, Texture};
+use opengl_graphics::{GlGraphics, OpenGL};
 use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
 use piston::event::*;
 use piston::window::{WindowSettings, Size};
 use sdl2_window::Sdl2Window;
 use std::path::Path;
-
-use ffmpeg::codec;
-use ffmpeg::format;
-use ffmpeg::media;
-use ffmpeg::software::scaling;
-use ffmpeg::util::format::pixel::Pixel;
-use ffmpeg::frame;
-use image::RgbaImage;
 
 use line_graph::LineGraph;
 
@@ -83,7 +72,7 @@ struct RoverUi {
 
 impl RoverUi {
     fn new(socket: UdpSocket) -> RoverUi {
-        let mut voltage_graph = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
+        let voltage_graph = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
     
         RoverUi {
             bg_color: rgb(0.2, 0.35, 0.45),
@@ -341,9 +330,6 @@ impl RoverUi {
 }
 
 fn main() {
-    ffmpeg::init().unwrap();
-    ffmpeg::format::network::init();
-
     let opengl = OpenGL::_3_2;
     let window = Sdl2Window::new(
         WindowSettings::new(
@@ -386,68 +372,6 @@ fn main() {
     rover_ui.send_rpm();
     rover_ui.send_f_pan();
     rover_ui.send_f_tilt();
-    
-    ////////////////////////////////////////////////////////////////////////////////////////
-    
-    let rgba_img = RgbaImage::new(512, 512);
-    let mut video_texture = Texture::from_image(&rgba_img);
-    let mut rgba_img = Arc::new(Mutex::new(rgba_img));
-    
-    let thread_rgba_img = rgba_img.clone();
-    thread::Builder::new()
-        .name("video_packet_in".to_string())
-        .spawn(move || {
-            let mut format_context = format::open(&"rtsp://10.10.153.26/axis-media/media.amp".to_string()).unwrap();
-            
-            unsafe {
-                println!("ANALYZE {}", (*format_context.as_mut_ptr()).max_analyze_duration);
-                println!("ANALYZE2 {}", (*format_context.as_mut_ptr()).max_analyze_duration2);
-                (*format_context.as_mut_ptr()).max_analyze_duration = 100000;
-                (*format_context.as_mut_ptr()).max_analyze_duration2 = 100000;
-            }
-            
-            format::dump(&format_context, 0, Some("rtsp://10.10.153.26/axis-media/media.amp"));
-            
-            let stream_codec =
-                format_context.streams()
-                              .filter(|stream| stream.codec().medium() == media::Type::Video)
-                              .next().expect("No video streams in stream")
-                              .codec();
-            let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
-            
-            let codec_context = stream_codec.clone().open(&video_codec).unwrap();
-            
-            let mut decoder = codec_context.decoder().unwrap().video().unwrap();
-            let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
-                                                    Pixel::RGBA, 512, 512,
-                                                    scaling::flag::BILINEAR).unwrap();
-            
-            let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
-            let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
-            
-            let mut video_packets = format_context.packets();
-    
-            for (_, packet) in video_packets {
-                decoder.decode(&packet, &mut input_frame).unwrap();
-                
-                sws_context.run(&input_frame, &mut output_frame);
-                
-                //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
-                for line in output_frame.data().iter() {
-                    let mut rgba_img = thread_rgba_img.lock().unwrap();
-                
-                    //buf.reserve(line.len());
-                    unsafe {
-                        //let buf_len = buf.len();
-                        //buf.set_len(buf_len + line.len());
-                        let src: *const u8 = std::mem::transmute(line.get(0));
-                        //let dst: *mut u8 = std::mem::transmute(buf.get_mut(buf_len));
-                        let dst = rgba_img.as_mut_ptr();
-                        std::ptr::copy(src, dst, line.len());
-                    }
-                }
-            }
-        }).unwrap();
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -493,8 +417,8 @@ fn main() {
             
             if let Some(ref controller) = controller {
                 // Control RPM with analog sticks
-                let left_y = controller.get_axis(controller::Axis::LeftY).unwrap();
-                let right_y = controller.get_axis(controller::Axis::RightY).unwrap();
+                let left_y = controller.get_axis(controller::Axis::LeftY);
+                let right_y = controller.get_axis(controller::Axis::RightY);
                 
                 let l_rpm = -(left_y as f32 / 32768.0) * rover_ui.max_rpm;
                 let r_rpm = -(right_y as f32 / 32768.0) * rover_ui.max_rpm;
@@ -502,38 +426,31 @@ fn main() {
                 rover_ui.try_update_rpm(l_rpm, r_rpm);
                 
                 // Control pan with left/right arrow keys
-                if controller.get_button(controller::Button::DPadLeft).unwrap() {
+                if controller.get_button(controller::Button::DPadLeft) {
                     rover_ui.f_pan -= f32::min(5.0, rover_ui.f_pan - 0.0);
                     rover_ui.send_f_pan();
                 }
-                if controller.get_button(controller::Button::DPadRight).unwrap() {
+                if controller.get_button(controller::Button::DPadRight) {
                     rover_ui.f_pan += f32::min(5.0, 180.0 - rover_ui.f_pan);
                     rover_ui.send_f_pan();
                 }
                 
                 // Control tilt with up/down arrow keys
-                if controller.get_button(controller::Button::DPadDown).unwrap() {
+                if controller.get_button(controller::Button::DPadDown) {
                     rover_ui.f_tilt -= f32::min(5.0, rover_ui.f_tilt - 90.0);
                     rover_ui.send_f_tilt();
                 }
-                if controller.get_button(controller::Button::DPadUp).unwrap() {
+                if controller.get_button(controller::Button::DPadUp) {
                     rover_ui.f_tilt += f32::min(5.0, 180.0 - rover_ui.f_tilt);
                     rover_ui.send_f_tilt();
                 }
             }
-            
-            let rgba_img = rgba_img.lock().unwrap();
-            video_texture.update(&*rgba_img);
         });
         
         // Render GUI
         e.render(|args| {
             gl.draw(args.viewport(), |c, gl| {
-                use graphics::*;
-            
                 rover_ui.draw_ui(c, gl, &mut ui);
-                
-                image(&video_texture, c.trans(500.0, 120.0).transform, gl);
             });
         });
     }

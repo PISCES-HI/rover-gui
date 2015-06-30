@@ -1,0 +1,25 @@
+[package]
+name = "rover-gui"
+version = "0.1.0"
+authors = ["Theodore DeRego <tderego94@gmail.com>"]
+
+[[bin]]
+
+name="telemetry"
+path="../src/telemetry.rs"
+
+#[dependencies.pistoncore-sdl2_window]
+#git = "https://github.com/pistondevelopers/sdl2_window"
+
+#[dependencies.conrod]
+#git = "https://github.com/pistondevelopers/conrod"
+
+[dependencies]
+
+time = "*"
+sdl2 = "*"
+piston = "*"
+piston2d-graphics = "*"
+piston2d-opengl_graphics = "*"
+pistoncore-sdl2_window = "*"
+conrod = "*"

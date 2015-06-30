@@ -1,4 +1,4 @@
-target
-*.dll
-data/*
 Cargo.lock
+*.dll
+*/target/*
+*/data/*
