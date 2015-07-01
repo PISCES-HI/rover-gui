@@ -25,10 +25,15 @@ use time;
 
 use line_graph::LineGraph;
 
+enum MissionTime {
+    Paused(time::Duration),
+    Running(time::Tm, time::Duration),
+}
+
 pub struct NavigationUi {
     bg_color: Color,
     
-    start_time: time::Tm,
+    mission_time: MissionTime,
     
     // RPM stuff
     pub l_rpm: f32,
@@ -57,7 +62,7 @@ impl NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             
-            start_time: time::now(),
+            mission_time: MissionTime::Paused(time::Duration::zero()),
             
             l_rpm: 0.0,
             r_rpm: 0.0,
@@ -82,9 +87,90 @@ impl NavigationUi {
     
         // Draw the background.
         Background::new().color(self.bg_color).draw(ui, gl);
+        
+        let time_now = time::now();
+        
+        // Local time
+        Label::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
+            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 10.0)
+            .font_size(16)
+            .color(self.bg_color.plain_contrast())
+            .set(LOCAL_TIME, ui);
+        
+        // UTC time
+        Label::new(format!("{}", time_now.to_utc().strftime("%Z  %x  %X").unwrap()).as_str())
+            .xy((-ui.win_w / 2.0) + 104.0, (ui.win_h / 2.0) - 30.0)
+            .font_size(16)
+            .color(self.bg_color.plain_contrast())
+            .set(UTC_TIME, ui);
+        
+        // Mission time label
+        let mission_time =
+            match self.mission_time {
+                MissionTime::Paused(t) => t,
+                MissionTime::Running(start_time, extra_time) =>
+                    (time::now() - start_time) + extra_time
+            };
+        let total_days = mission_time.num_days();
+        let total_hours = mission_time.num_hours();
+        let total_minutes = mission_time.num_minutes();
+        let total_seconds = mission_time.num_seconds();
+        
+        let days = total_days;
+        let hours = total_hours - total_days*24;
+        let minutes = total_minutes - total_hours*60;
+        let seconds = total_seconds - total_minutes*60;
+        Label::new(format!("Mission Time: {}:{}:{}:{}", days, hours, minutes, seconds).as_str())
+            .xy((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 70.0)
+            .font_size(20)
+            .color(self.bg_color.plain_contrast())
+            .set(MISSION_TIME_LABEL, ui);
+        
+        // Mission start/pause button
+        let mission_start_text =
+            match self.mission_time {
+                MissionTime::Paused(_) => "Start",
+                MissionTime::Running(_, _) => "Pause",
+            };
+        Button::new()
+            .dimensions(100.0, 30.0)
+            .xy((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
+            .rgb(1.0, 0.0, 0.0)
+            .frame(1.0)
+            .label(mission_start_text)
+            .react(|| {
+                match self.mission_time {
+                    MissionTime::Paused(current_time) => {
+                        self.mission_time = MissionTime::Running(time::now(), current_time);
+                    },
+                    MissionTime::Running(start_time, extra_time) => {
+                        self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
+                    },
+                };
+            })
+            .set(MISSION_START_BUTTON, ui);
+        
+        // Mission reset button
+        Button::new()
+            .dimensions(100.0, 30.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
+            .rgb(1.0, 0.0, 0.0)
+            .frame(1.0)
+            .label("Reset")
+            .react(|| {
+                self.mission_time = MissionTime::Paused(time::Duration::zero());
+            })
+            .set(MISSION_RESET_BUTTON, ui);
+        
+        // Time delay
+        Label::new("Time Delay: 0s")
+            .xy((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(TIME_DELAY, ui);
 
         // Left RPM slider
-        let l_rpm =
+        /*let l_rpm =
             if self.both_rpm {
                 self.l_rpm.max(self.r_rpm)
             } else {
@@ -202,23 +288,7 @@ impl NavigationUi {
             .font_size(32)
             .color(self.bg_color.plain_contrast())
             .set(VOLTAGE_12_LABEL, ui);
-        
-        // Mission time label
-        let mission_time = time::now() - self.start_time;
-        let total_hours = mission_time.num_hours();
-        let total_minutes = mission_time.num_minutes();
-        let total_seconds = mission_time.num_seconds();
-        let total_milliseconds = mission_time.num_milliseconds();
-        
-        let hours = total_hours;
-        let minutes = total_minutes - total_hours*60;
-        let seconds = total_seconds - total_minutes*60;
-        let milliseconds = total_milliseconds - total_seconds*1000;
-        Label::new(format!("Mission Time: {}:{}:{}:{}", hours, minutes, seconds, milliseconds).as_str())
-            .xy(0.0, (-ui.win_h / 2.0) + 35.0)
-            .font_size(32)
-            .color(self.bg_color.plain_contrast())
-            .set(MISSION_TIME_LABEL, ui);
+        */
 
         // Draw our UI!
         ui.draw(c, gl);
@@ -331,8 +401,13 @@ impl NavigationUi {
 }
 
 // Widget IDs
-const TITLE: WidgetId = 0;
-const L_RPM_SLIDER: WidgetId = TITLE + 1;
+const LOCAL_TIME: WidgetId = 0;
+const UTC_TIME: WidgetId = LOCAL_TIME + 1;
+const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
+const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
+const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
+const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
+const L_RPM_SLIDER: WidgetId = TIME_DELAY + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
@@ -341,4 +416,3 @@ const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const BLADE_SLIDER: WidgetId = F_TILT_SLIDER + 1;
 const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;
-const MISSION_TIME_LABEL: WidgetId = VOLTAGE_12_LABEL + 1;
