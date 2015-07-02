@@ -84,7 +84,8 @@ fn main() {
         }).unwrap();
     
     let mut nav_ui = NavigationUi::new(socket);
-    nav_ui.send_rpm();
+    nav_ui.send_l_rpm();
+    nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
     nav_ui.send_f_tilt();
     
@@ -183,7 +184,8 @@ fn main() {
                 let l_rpm = -(left_y as f32 / 32768.0) * nav_ui.max_rpm;
                 let r_rpm = -(right_y as f32 / 32768.0) * nav_ui.max_rpm;
                 
-                nav_ui.try_update_rpm(l_rpm, r_rpm);
+                nav_ui.try_update_l_rpm(l_rpm);
+                nav_ui.try_update_r_rpm(r_rpm);
                 
                 // Control pan with left/right arrow keys
                 if controller.get_button(controller::Button::DPadLeft).unwrap() {

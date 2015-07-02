@@ -39,7 +39,6 @@ pub struct NavigationUi {
     // RPM stuff
     pub l_rpm: f32,
     pub r_rpm: f32,
-    pub both_rpm: bool,
     pub max_rpm: f32,
     l_rpm_status: String,
     r_rpm_status: String,
@@ -67,8 +66,7 @@ impl NavigationUi {
             
             l_rpm: 0.0,
             r_rpm: 0.0,
-            both_rpm: false,
-            max_rpm: 2000.0,
+            max_rpm: 100.0,
             l_rpm_status: "UNAVAILABLE".to_string(),
             r_rpm_status: "UNAVAILABLE".to_string(),
             
@@ -206,13 +204,7 @@ impl NavigationUi {
             .set(VELOCITY_LABEL, ui);
 
         // Left RPM slider
-        let l_rpm =
-            if self.both_rpm {
-                self.l_rpm.max(self.r_rpm)
-            } else {
-                self.l_rpm
-            };
-        Slider::new(l_rpm, -self.max_rpm, self.max_rpm)
+        Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
             .dimensions(150.0, 30.0)
             .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 410.0)
             .rgb(0.5, 0.3, 0.6)
@@ -220,22 +212,12 @@ impl NavigationUi {
             .label("L Motor")
             .label_color(white())
             .react(|new_rpm| {
-                if !self.both_rpm {
-                    self.try_update_l_rpm(new_rpm);
-                } else {
-                    self.try_update_rpm(new_rpm, new_rpm);
-                }
+                self.try_update_l_rpm(new_rpm);
             })
             .set(L_RPM_SLIDER, ui);
         
         // Right RPM slider
-        let r_rpm =
-            if self.both_rpm {
-                self.l_rpm.max(self.r_rpm)
-            } else {
-                self.r_rpm
-            };
-        Slider::new(r_rpm, -self.max_rpm, self.max_rpm)
+        Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
             .dimensions(150.0, 30.0)
             .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 450.0)
             .rgb(0.5, 0.3, 0.6)
@@ -243,11 +225,7 @@ impl NavigationUi {
             .label("R Motor")
             .label_color(white())
             .react(|new_rpm| {
-                if !self.both_rpm {
-                    self.try_update_r_rpm(new_rpm);
-                } else {
-                    self.try_update_rpm(new_rpm, new_rpm);
-                }
+                self.try_update_r_rpm(new_rpm);
             })
             .set(R_RPM_SLIDER, ui);
         
@@ -261,7 +239,8 @@ impl NavigationUi {
             .react(|| {
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
-                self.send_rpm();
+                self.send_l_rpm();
+                self.send_r_rpm();
             })
             .set(STOP_BUTTON, ui);
         
@@ -353,36 +332,20 @@ impl NavigationUi {
     
     pub fn on_key_pressed(&mut self, key: input::Key) {
         match key {
-            input::Key::RCtrl | input::Key::LCtrl => {
-                self.both_rpm = true;
-            },
             _ => { },
         }
     }
     
     pub fn on_key_released(&mut self, key: input::Key) {
         match key {
-            input::Key::RCtrl | input::Key::LCtrl => {
-                self.both_rpm = false;
-            },
             _ => { },
-        }
-    }
-    
-    pub fn try_update_rpm(&mut self, l_rpm: f32, r_rpm: f32) -> io::Result<usize> {
-        if (l_rpm - self.l_rpm).abs() > 5.0 || (r_rpm - self.r_rpm).abs() > 5.0 {
-            self.l_rpm = l_rpm;
-            self.r_rpm = r_rpm;
-            self.send_rpm()
-        } else {
-            Ok(0)
         }
     }
     
     pub fn try_update_l_rpm(&mut self, l_rpm: f32) -> io::Result<usize> {
         if (l_rpm - self.l_rpm).abs() > 5.0 {
             self.l_rpm = l_rpm;
-            self.send_rpm()
+            self.send_l_rpm()
         } else {
             Ok(0)
         }
@@ -391,7 +354,7 @@ impl NavigationUi {
     pub fn try_update_r_rpm(&mut self, r_rpm: f32) -> io::Result<usize> {
         if (r_rpm - self.r_rpm).abs() > 5.0 {
             self.r_rpm = r_rpm;
-            self.send_rpm()
+            self.send_r_rpm()
         } else {
             Ok(0)
         }
@@ -424,23 +387,28 @@ impl NavigationUi {
         }
     }
     
-    pub fn send_rpm(&self) -> io::Result<usize> {
-        let packet = format!("A{}:{}", self.l_rpm as i32, self.r_rpm as i32);
+    pub fn send_l_rpm(&self) -> io::Result<usize> {
+        let packet = format!("A{}", self.l_rpm as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+    }
+    
+    pub fn send_r_rpm(&self) -> io::Result<usize> {
+        let packet = format!("B{}", self.r_rpm as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
     pub fn send_f_pan(&self) -> io::Result<usize> {
-        let packet = format!("B{}", self.f_pan as i32);
+        let packet = format!("C{}", self.f_pan as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
     pub fn send_f_tilt(&self) -> io::Result<usize> {
-        let packet = format!("C{}", self.f_tilt as i32);
+        let packet = format!("D{}", self.f_tilt as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
     pub fn send_blade(&self) -> io::Result<usize> {
-        let packet = format!("D{}", self.blade as i32);
+        let packet = format!("E{}", self.blade as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
 }
