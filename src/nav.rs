@@ -1,3 +1,4 @@
+use std::io;
 use std::net::UdpSocket;
 use std::ops::DerefMut;
 
@@ -135,7 +136,7 @@ impl NavigationUi {
         Button::new()
             .dimensions(100.0, 30.0)
             .xy((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
-            .rgb(1.0, 0.0, 0.0)
+            .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label(mission_start_text)
             .react(|| {
@@ -154,7 +155,7 @@ impl NavigationUi {
         Button::new()
             .dimensions(100.0, 30.0)
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
-            .rgb(1.0, 0.0, 0.0)
+            .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label("Reset")
             .react(|| {
@@ -168,20 +169,55 @@ impl NavigationUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
+        
+        // IMU label
+        Label::new("IMU")
+            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 190.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_LABEL, ui);
+        
+        // GPS label
+        Label::new("GPS")
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 400.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(GPS_LABEL, ui);
+        
+        // Longitude label
+        Label::new("19 43' 1\" N")
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 425.0)
+            .font_size(16)
+            .color(self.bg_color.plain_contrast())
+            .set(LONGITUDE_LABEL, ui);
+        
+        // Latitude label
+        Label::new("155 4' 1\" W")
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 445.0)
+            .font_size(16)
+            .color(self.bg_color.plain_contrast())
+            .set(LATITUDE_LABEL, ui);
+        
+        // Longitude label
+        Label::new("0.5 m/s")
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 465.0)
+            .font_size(16)
+            .color(self.bg_color.plain_contrast())
+            .set(VELOCITY_LABEL, ui);
 
         // Left RPM slider
-        /*let l_rpm =
+        let l_rpm =
             if self.both_rpm {
                 self.l_rpm.max(self.r_rpm)
             } else {
                 self.l_rpm
             };
         Slider::new(l_rpm, -self.max_rpm, self.max_rpm)
-            .dimensions(200.0, 30.0)
-            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 25.0)
+            .dimensions(150.0, 30.0)
+            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 410.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
-            .label("Left RPM")
+            .label("L Motor")
             .label_color(white())
             .react(|new_rpm| {
                 if !self.both_rpm {
@@ -200,11 +236,11 @@ impl NavigationUi {
                 self.r_rpm
             };
         Slider::new(r_rpm, -self.max_rpm, self.max_rpm)
-            .dimensions(200.0, 30.0)
-            .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 25.0)
+            .dimensions(150.0, 30.0)
+            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 450.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
-            .label("Right RPM")
+            .label("R Motor")
             .label_color(white())
             .react(|new_rpm| {
                 if !self.both_rpm {
@@ -217,8 +253,8 @@ impl NavigationUi {
         
         // Stop button
         Button::new()
-            .dimensions(200.0, 30.0)
-            .xy(0.0, (ui.win_h / 2.0) - 25.0)
+            .dimensions(100.0, 30.0)
+            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 490.0)
             .rgb(1.0, 0.0, 0.0)
             .frame(1.0)
             .label("Stop")
@@ -230,7 +266,7 @@ impl NavigationUi {
             .set(STOP_BUTTON, ui);
         
         // Left status RPM
-        Label::new(self.l_rpm_status.as_str())
+        /*Label::new(self.l_rpm_status.as_str())
             .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
             .font_size(32)
             .color(self.bg_color.plain_contrast())
@@ -292,9 +328,6 @@ impl NavigationUi {
 
         // Draw our UI!
         ui.draw(c, gl);
-        
-        // Draw telemetry graphs
-        self.voltage_graph.draw(c.trans(5.0, 250.0), gl, ui.glyph_cache.borrow_mut().deref_mut());
     }
     
     pub fn handle_packet(&mut self, packet: String) {
@@ -336,67 +369,79 @@ impl NavigationUi {
         }
     }
     
-    pub fn try_update_rpm(&mut self, l_rpm: f32, r_rpm: f32) {
+    pub fn try_update_rpm(&mut self, l_rpm: f32, r_rpm: f32) -> io::Result<usize> {
         if (l_rpm - self.l_rpm).abs() > 5.0 || (r_rpm - self.r_rpm).abs() > 5.0 {
             self.l_rpm = l_rpm;
             self.r_rpm = r_rpm;
-            self.send_rpm();
+            self.send_rpm()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn try_update_l_rpm(&mut self, l_rpm: f32) {
+    pub fn try_update_l_rpm(&mut self, l_rpm: f32) -> io::Result<usize> {
         if (l_rpm - self.l_rpm).abs() > 5.0 {
             self.l_rpm = l_rpm;
-            self.send_rpm();
+            self.send_rpm()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn try_update_r_rpm(&mut self, r_rpm: f32) {
+    pub fn try_update_r_rpm(&mut self, r_rpm: f32) -> io::Result<usize> {
         if (r_rpm - self.r_rpm).abs() > 5.0 {
             self.r_rpm = r_rpm;
-            self.send_rpm();
+            self.send_rpm()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn try_update_f_pan(&mut self, f_pan: f32) {
+    pub fn try_update_f_pan(&mut self, f_pan: f32) -> io::Result<usize> {
         if (f_pan - self.f_pan).abs() > 5.0 || f_pan == 0.0 || f_pan == 180.0 {
             self.f_pan = f_pan;
-            self.send_f_pan();
+            self.send_f_pan()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn try_update_f_tilt(&mut self, f_tilt: f32) {
+    pub fn try_update_f_tilt(&mut self, f_tilt: f32) -> io::Result<usize> {
         if (f_tilt - self.f_tilt).abs() > 5.0 || f_tilt == 90.0 || f_tilt == 180.0 {
             self.f_tilt = f_tilt;
-            self.send_f_tilt();
+            self.send_f_tilt()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn try_update_blade(&mut self, blade: f32) {
+    pub fn try_update_blade(&mut self, blade: f32) -> io::Result<usize> {
         if (blade - self.blade).abs() > 1.0 || blade == -10.0 || blade == 10.0 {
             self.blade = blade;
-            self.send_blade();
+            self.send_blade()
+        } else {
+            Ok(0)
         }
     }
     
-    pub fn send_rpm(&self) {
+    pub fn send_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}:{}", self.l_rpm as i32, self.r_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
-    pub fn send_f_pan(&self) {
+    pub fn send_f_pan(&self) -> io::Result<usize> {
         let packet = format!("B{}", self.f_pan as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
-    pub fn send_f_tilt(&self) {
+    pub fn send_f_tilt(&self) -> io::Result<usize> {
         let packet = format!("C{}", self.f_tilt as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
-    pub fn send_blade(&self) {
+    pub fn send_blade(&self) -> io::Result<usize> {
         let packet = format!("D{}", self.blade as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001)).unwrap();
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
 }
 
@@ -407,12 +452,18 @@ const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
 const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
 const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
 const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
-const L_RPM_SLIDER: WidgetId = TIME_DELAY + 1;
+const IMU_LABEL: WidgetId = TIME_DELAY + 1;
+const GPS_LABEL: WidgetId = IMU_LABEL + 1;
+const LONGITUDE_LABEL: WidgetId = GPS_LABEL + 1;
+const LATITUDE_LABEL: WidgetId = LONGITUDE_LABEL + 1;
+const VELOCITY_LABEL: WidgetId = LATITUDE_LABEL + 1;
+const L_RPM_SLIDER: WidgetId = VELOCITY_LABEL + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
-const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
+
+/*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
 const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const BLADE_SLIDER: WidgetId = F_TILT_SLIDER + 1;
-const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;
+const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;*/

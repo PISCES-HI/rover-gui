@@ -49,7 +49,7 @@ fn main() {
     let window = Sdl2Window::new(
         WindowSettings::new(
             "PISCES Rover Controller".to_string(),
-            Size { width: 1280, height: 720 }
+            Size { width: 1280, height: 700 }
         )
         .exit_on_esc(true)
         .samples(4)
@@ -217,7 +217,11 @@ fn main() {
             
                 nav_ui.draw_ui(c, gl, &mut ui);
                 
-                image(&video_texture, c.scale(800.0/512.0, 450.0/512.0).trans(300.0, 140.0).transform, gl);
+                Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                    .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
+                          &c.draw_state, c.transform,
+                          gl);
+                image(&video_texture, c.scale(700.0/512.0, 400.0/512.0).trans(1280.0 - 700.0 - 5.0, 5.0).transform, gl);
             });
         });
     }
