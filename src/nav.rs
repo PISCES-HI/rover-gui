@@ -265,6 +265,32 @@ impl NavigationUi {
             })
             .set(STOP_BUTTON, ui);
         
+        // Camera pan slider
+        Slider::new(self.f_pan, 0.0, 180.0)
+            .dimensions(150.0, 30.0)
+            .xy((ui.win_w / 2.0) - 425.0, (ui.win_h / 2.0) - 425.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Pan")
+            .label_color(white())
+            .react(|new_pan| {
+                self.try_update_f_pan(new_pan);
+            })
+            .set(F_PAN_SLIDER, ui);
+        
+        // Camera tilt slider
+        Slider::new(self.f_tilt, 90.0, 180.0)
+            .dimensions(150.0, 30.0)
+            .xy((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Tilt")
+            .label_color(white())
+            .react(|new_tilt| {
+                self.try_update_f_tilt(new_tilt);
+            })
+            .set(F_TILT_SLIDER, ui);
+        
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
             .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
@@ -279,33 +305,7 @@ impl NavigationUi {
             .color(self.bg_color.plain_contrast())
             .set(R_RPM_STATUS, ui);
         
-        // Camera pan slider
-        Slider::new(self.f_pan, 0.0, 180.0)
-            .dimensions(200.0, 30.0)
-            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 110.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("Forward Pan")
-            .label_color(white())
-            .react(|new_pan| {
-                self.try_update_f_pan(new_pan);
-            })
-            .set(F_PAN_SLIDER, ui);
-        
-        // Camera tilt slider
-        Slider::new(self.f_tilt, 90.0, 180.0)
-            .dimensions(200.0, 30.0)
-            .xy(110.0 - (ui.win_w / 2.0) + 210.0, (ui.win_h / 2.0) - 110.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("Forward Tilt")
-            .label_color(white())
-            .react(|new_tilt| {
-                self.try_update_f_tilt(new_tilt);
-            })
-            .set(F_TILT_SLIDER, ui);
-        
-        // Camera tilt slider
+        // Blade slider
         Slider::new(self.blade, -10.0, 10.0)
             .dimensions(200.0, 30.0)
             .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 160.0)
@@ -460,10 +460,10 @@ const VELOCITY_LABEL: WidgetId = LATITUDE_LABEL + 1;
 const L_RPM_SLIDER: WidgetId = VELOCITY_LABEL + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
+const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
+const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
-const F_PAN_SLIDER: WidgetId = R_RPM_STATUS + 1;
-const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
-const BLADE_SLIDER: WidgetId = F_TILT_SLIDER + 1;
+const BLADE_SLIDER: WidgetId = R_RPM_STATUS + 1;
 const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;*/

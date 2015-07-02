@@ -222,6 +222,15 @@ fn main() {
                           &c.draw_state, c.transform,
                           gl);
                 image(&video_texture, c.scale(700.0/512.0, 400.0/512.0).trans(1280.0 - 700.0 - 5.0, 5.0).transform, gl);
+                
+                Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                    .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
+                          &c.draw_state, c.transform,
+                          gl);
+                Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                    .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
+                          &c.draw_state, c.transform,
+                          gl);
             });
         });
     }
