@@ -1,10 +1,9 @@
 #![feature(convert)]
 use std::net::UdpSocket;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
-
-use sdl2::controller;
 
 extern crate time;
 extern crate sdl2;
@@ -25,25 +24,18 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
 use piston::event::*;
 use piston::window::{WindowSettings, Size};
+use sdl2::controller;
 use sdl2_window::Sdl2Window;
-use std::path::Path;
-
-use ffmpeg::codec;
-use ffmpeg::format;
-use ffmpeg::media;
-use ffmpeg::software::scaling;
-use ffmpeg::util::format::pixel::Pixel;
-use ffmpeg::frame;
-use image::RgbaImage;
 
 use nav::NavigationUi;
+use video_stream::{init_ffmpeg, start_video_stream};
 
 pub mod line_graph;
 pub mod nav;
+pub mod video_stream;
 
 fn main() {
-    ffmpeg::init().unwrap();
-    ffmpeg::format::network::init();
+    init_ffmpeg();
 
     let opengl = OpenGL::_3_2;
     let window = Sdl2Window::new(
@@ -67,6 +59,7 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
+    socket.send_to(b"connect me plz", ("10.10.153.25", 30001));
     
     let in_socket = socket.try_clone().unwrap();
     let (packet_t, packet_r) = channel();
@@ -91,65 +84,9 @@ fn main() {
     
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let rgba_img = RgbaImage::new(512, 512);
-    let mut video_texture = Texture::from_image(&rgba_img);
-    let rgba_img = Arc::new(Mutex::new(rgba_img));
-    
-    let thread_rgba_img = rgba_img.clone();
-    thread::Builder::new()
-        .name("video_packet_in".to_string())
-        .spawn(move || {
-            let mut format_context = format::open(&"rtsp://10.10.153.26/axis-media/media.amp".to_string()).unwrap();
-            //let mut format_context = format::open(&"rtsp://192.168.1.117:554/ch0_0.h264".to_string()).unwrap();
-            
-            unsafe {
-                println!("ANALYZE {}", (*format_context.as_mut_ptr()).max_analyze_duration);
-                println!("ANALYZE2 {}", (*format_context.as_mut_ptr()).max_analyze_duration2);
-                (*format_context.as_mut_ptr()).max_analyze_duration = 100000;
-                (*format_context.as_mut_ptr()).max_analyze_duration2 = 100000;
-            }
-            
-            format::dump(&format_context, 0, Some("rtsp://10.10.153.26/axis-media/media.amp"));
-            //format::dump(&format_context, 0, Some("rtsp://192.168.1.117:554/ch0_0.h264"));
-            
-            let stream_codec =
-                format_context.streams()
-                              .filter(|stream| stream.codec().medium() == media::Type::Video)
-                              .next().expect("No video streams in stream")
-                              .codec();
-            let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
-            
-            let codec_context = stream_codec.clone().open(&video_codec).unwrap();
-            
-            let mut decoder = codec_context.decoder().unwrap().video().unwrap();
-            let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
-                                                    Pixel::RGBA, 512, 512,
-                                                    scaling::flag::BILINEAR).unwrap();
-            
-            let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
-            let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
-            
-            for (_, packet) in format_context.packets() {
-                decoder.decode(&packet, &mut input_frame).unwrap();
-                
-                sws_context.run(&input_frame, &mut output_frame).unwrap();
-                
-                //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
-                for line in output_frame.data().iter() {
-                    let mut rgba_img = thread_rgba_img.lock().unwrap();
-                
-                    //buf.reserve(line.len());
-                    unsafe {
-                        //let buf_len = buf.len();
-                        //buf.set_len(buf_len + line.len());
-                        let src: *const u8 = std::mem::transmute(line.get(0));
-                        //let dst: *mut u8 = std::mem::transmute(buf.get_mut(buf_len));
-                        let dst = rgba_img.as_mut_ptr();
-                        std::ptr::copy(src, dst, line.len());
-                    }
-                }
-            }
-        }).unwrap();
+    let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.153.26/axis-media/media.amp");
+    let (mut video1_texture, video1_image) = start_video_stream("rtsp://10.10.153.27/axis-media/media.amp");
+    let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.153.28/axis-media/media.amp");
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -208,8 +145,14 @@ fn main() {
                 }
             }
             
-            let rgba_img = rgba_img.lock().unwrap();
-            video_texture.update(&*rgba_img);
+            let video0_image = video0_image.lock().unwrap();
+            video0_texture.update(&*video0_image);
+            
+            let video1_image = video1_image.lock().unwrap();
+            video1_texture.update(&*video1_image);
+            
+            let video2_image = video2_image.lock().unwrap();
+            video2_texture.update(&*video2_image);
         });
         
         // Render GUI
@@ -223,16 +166,19 @@ fn main() {
                     .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&video_texture, c.scale(700.0/512.0, 400.0/512.0).trans(1280.0 - 700.0 - 5.0, 5.0).transform, gl);
+                image(&video0_texture, c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
+                image(&video1_texture, c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
+                image(&video2_texture, c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
             });
         });
     }
