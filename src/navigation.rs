@@ -27,11 +27,11 @@ use piston::window::{WindowSettings, Size};
 use sdl2::controller;
 use sdl2_window::Sdl2Window;
 
-use nav::NavigationUi;
+use nav_ui::NavigationUi;
 use video_stream::{init_ffmpeg, start_video_stream};
 
 pub mod line_graph;
-pub mod nav;
+pub mod nav_ui;
 pub mod video_stream;
 
 fn main() {
@@ -40,7 +40,7 @@ fn main() {
     let opengl = OpenGL::_3_2;
     let window = Sdl2Window::new(
         WindowSettings::new(
-            "PISCES Rover Controller".to_string(),
+            "PISCES Navigation".to_string(),
             Size { width: 1280, height: 700 }
         )
         .exit_on_esc(true)
@@ -55,7 +55,7 @@ fn main() {
     let mut ui = Ui::new(glyph_cache, theme);
     
     // Initialize game pad
-    let controller = init_game_pad();
+    let controller = init_game_controller();
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
@@ -184,7 +184,7 @@ fn main() {
     }
 }
 
-pub fn init_game_pad() -> Option<controller::GameController> {
+pub fn init_game_controller() -> Option<controller::GameController> {
     use sdl2::{joystick, controller};
     
     println!("Looking for game controller...");

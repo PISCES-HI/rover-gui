@@ -326,6 +326,9 @@ impl NavigationUi {
                                                       self.voltage_graph.num_points() as f64);
                 }
             },
+            "GPS" => {
+                println!("{}", packet);
+            },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
     }
