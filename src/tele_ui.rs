@@ -42,12 +42,14 @@ pub struct TelemetryUi {
     l_rpm_status: String,
     r_rpm_status: String,
     
-    voltage_graph: LineGraph,
+    volt_graph_12: LineGraph,
+    volts_12: String,
+    amps_12: String,
 }
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let voltage_graph = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
+        let volt_graph_12 = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
     
         TelemetryUi {
             socket: socket,
@@ -59,7 +61,9 @@ impl TelemetryUi {
             l_rpm_status: "UNAVAILABLE".to_string(),
             r_rpm_status: "UNAVAILABLE".to_string(),
             
-            voltage_graph: voltage_graph,
+            volt_graph_12: volt_graph_12,
+            volts_12: "UNAVAILABLE".to_string(),
+            amps_12: "UNAVAILABLE".to_string(),
         }
     }
     
@@ -149,11 +153,80 @@ impl TelemetryUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Power section
+        
+        Label::new("Power")
+            .xy((-ui.win_w / 2.0) + 110.0, (ui.win_h / 2.0) - 190.0)
+            .font_size(20)
+            .color(self.bg_color.plain_contrast())
+            .set(POWER_LABEL, ui);
+        
+        // 48 bus
+        
+        Label::new(format!("48 Bus").as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 220.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(BUS_48_LABEL, ui);
+        
+        Label::new(format!("{}V", 48).as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 240.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(V48_LABEL, ui);
+        
+        Label::new(format!("{}A", 15).as_str())
+            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 240.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(A48_LABEL, ui);
+        
+        // 24 bus
+        
+        Label::new(format!("24 H-Bus").as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 280.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(BUS_24_LABEL, ui);
+        
+        Label::new(format!("{}V", 24.5).as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(V24_LABEL, ui);
+        
+        Label::new(format!("{}A", 3.5).as_str())
+            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(A24_LABEL, ui);
+        
+        // 12 bus
+        
+        Label::new(format!("P-12 Bus").as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 340.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(BUS_12_LABEL, ui);
+        
+        Label::new(self.volts_12.as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 360.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(V12_LABEL, ui);
+        
+        Label::new(format!("{}A", 1.3).as_str())
+            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 360.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(A12_LABEL, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
         
-        self.voltage_graph.draw(c.trans(ui.win_w - 205.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.volt_graph_12.draw(c.trans(ui.win_w - 205.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
     
     pub fn handle_packet(&mut self, packet: String) {
@@ -166,12 +239,13 @@ impl TelemetryUi {
                 self.r_rpm_status = packet_parts[2].clone();
             },
             "12V_VOLTAGE" => {
-                let point_x = self.voltage_graph.num_points() as f64;
-                self.voltage_graph.add_point(point_x, packet_parts[1].parse().unwrap());
-                if self.voltage_graph.num_points() > 100 {
-                    self.voltage_graph.x_interval = ((self.voltage_graph.num_points() - 100) as f64,
-                                                      self.voltage_graph.num_points() as f64);
+                let point_x = self.volt_graph_12.num_points() as f64;
+                self.volt_graph_12.add_point(point_x, packet_parts[1].parse().unwrap());
+                if self.volt_graph_12.num_points() > 100 {
+                    self.volt_graph_12.x_interval = ((self.volt_graph_12.num_points() - 100) as f64,
+                                                      self.volt_graph_12.num_points() as f64);
                 }
+                self.volts_12 = format!("{}V", packet_parts[1]);
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
@@ -197,3 +271,18 @@ const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
 const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
 const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
 const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
+
+// Power section
+const POWER_LABEL: WidgetId = TIME_DELAY + 1;
+
+const BUS_48_LABEL: WidgetId = POWER_LABEL + 1;
+const V48_LABEL: WidgetId = BUS_48_LABEL + 1;
+const A48_LABEL: WidgetId = V48_LABEL + 1;
+
+const BUS_24_LABEL: WidgetId = A48_LABEL + 1;
+const V24_LABEL: WidgetId = BUS_24_LABEL + 1;
+const A24_LABEL: WidgetId = V24_LABEL + 1;
+
+const BUS_12_LABEL: WidgetId = A24_LABEL + 1;
+const V12_LABEL: WidgetId = BUS_12_LABEL + 1;
+const A12_LABEL: WidgetId = V12_LABEL + 1;
