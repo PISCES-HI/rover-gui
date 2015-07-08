@@ -166,19 +166,19 @@ impl TelemetryUi {
         // 48 bus
         
         Label::new(format!("48 Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 220.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(BUS_48_LABEL, ui);
         
         Label::new(format!("{}V", 48).as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 240.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(V48_LABEL, ui);
         
         Label::new(format!("{}A", 15).as_str())
-            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 240.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(A48_LABEL, ui);
@@ -186,19 +186,19 @@ impl TelemetryUi {
         // 24 bus
         
         Label::new(format!("24 H-Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 280.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(BUS_24_LABEL, ui);
         
         Label::new(format!("{}V", 24.5).as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(V24_LABEL, ui);
         
         Label::new(format!("{}A", 3.5).as_str())
-            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(A24_LABEL, ui);
@@ -206,22 +206,62 @@ impl TelemetryUi {
         // 12 bus
         
         Label::new(format!("P-12 Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 340.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(BUS_12_LABEL, ui);
         
         Label::new(self.volts_12.as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 360.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(V12_LABEL, ui);
         
         Label::new(format!("{}A", 1.3).as_str())
-            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 360.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(A12_LABEL, ui);
+            
+        // Left motor
+        
+        Label::new(format!("L Motor").as_str())
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(L_MOTOR_POWER_LABEL, ui);
+        
+        Label::new("75% RPM")
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(L_MOTOR_RPM_LABEL, ui);
+        
+        Label::new("2.5A")
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(L_MOTOR_AMP_LABEL, ui);
+        
+        // Right motor
+        
+        Label::new(format!("R Motor").as_str())
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(R_MOTOR_POWER_LABEL, ui);
+        
+        Label::new("75% RPM")
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(R_MOTOR_RPM_LABEL, ui);
+        
+        Label::new("2.6A")
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
+            .font_size(16)
+            .color(rgb(0.0, 1.0, 0.0))
+            .set(R_MOTOR_AMP_LABEL, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
@@ -286,3 +326,11 @@ const A24_LABEL: WidgetId = V24_LABEL + 1;
 const BUS_12_LABEL: WidgetId = A24_LABEL + 1;
 const V12_LABEL: WidgetId = BUS_12_LABEL + 1;
 const A12_LABEL: WidgetId = V12_LABEL + 1;
+
+const L_MOTOR_POWER_LABEL: WidgetId = A12_LABEL + 1;
+const L_MOTOR_RPM_LABEL: WidgetId = L_MOTOR_POWER_LABEL + 1;
+const L_MOTOR_AMP_LABEL: WidgetId = L_MOTOR_RPM_LABEL + 1;
+
+const R_MOTOR_POWER_LABEL: WidgetId = L_MOTOR_AMP_LABEL + 1;
+const R_MOTOR_RPM_LABEL: WidgetId = R_MOTOR_POWER_LABEL + 1;
+const R_MOTOR_AMP_LABEL: WidgetId = R_MOTOR_RPM_LABEL + 1;
