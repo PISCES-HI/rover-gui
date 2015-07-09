@@ -42,14 +42,19 @@ pub struct TelemetryUi {
     l_rpm_status: String,
     r_rpm_status: String,
     
-    volt_graph_12: LineGraph,
-    volts_12: String,
-    amps_12: String,
+    v12_graph: LineGraph,
+    va_12: Option<(f64, f64)>,
+    
+    // Motor temp
+    motor_temp_graph: LineGraph,
+    l_motor_temp: Option<f64>,
+    r_motor_temp: Option<f64>,
 }
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let volt_graph_12 = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
+        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0));
+        let motor_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 100.0));
     
         TelemetryUi {
             socket: socket,
@@ -61,9 +66,12 @@ impl TelemetryUi {
             l_rpm_status: "UNAVAILABLE".to_string(),
             r_rpm_status: "UNAVAILABLE".to_string(),
             
-            volt_graph_12: volt_graph_12,
-            volts_12: "UNAVAILABLE".to_string(),
-            amps_12: "UNAVAILABLE".to_string(),
+            v12_graph: v12_graph,
+            va_12: None,
+            
+            motor_temp_graph: motor_temp_graph,
+            l_motor_temp: None,
+            r_motor_temp: None,
         }
     }
     
@@ -205,22 +213,35 @@ impl TelemetryUi {
         
         // 12 bus
         
-        Label::new(format!("P-12 Bus").as_str())
+        Label::new(format!("P-12 E Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(BUS_12_LABEL, ui);
         
-        Label::new(self.volts_12.as_str())
+        let (volts_12, amps_12, va_12_color) =
+            match self.va_12 {
+                Some((v, a)) => {
+                    (format!("{0:.2}V", v),
+                     format!("{0:.2}A", a),
+                     rgb(0.0, 1.0, 0.0))
+                },
+                None => {
+                    ("UNAVAILABLE".to_string(),
+                     "UNAVAILABLE".to_string(),
+                     rgb(1.0, 0.0, 0.0))
+                },
+            };
+        Label::new(volts_12.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(va_12_color)
             .set(V12_LABEL, ui);
         
-        Label::new(format!("{}A", 1.3).as_str())
+        Label::new(amps_12.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(va_12_color)
             .set(A12_LABEL, ui);
             
         // Left motor
@@ -262,11 +283,63 @@ impl TelemetryUi {
             .font_size(16)
             .color(rgb(0.0, 1.0, 0.0))
             .set(R_MOTOR_AMP_LABEL, ui);
+            
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Temp section
+        
+        Label::new("Temp")
+            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 190.0)
+            .font_size(20)
+            .color(self.bg_color.plain_contrast())
+            .set(TEMP_LABEL, ui);
+        
+        // Left motor temp
+        
+        Label::new(format!("L Motor").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 220.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(L_MOTOR_TEMP_LABEL, ui);
+        
+        let (l_motor_temp, l_motor_temp_color) =
+            match self.l_motor_temp {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("UNAVAILABLE".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(l_motor_temp.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 220.0)
+            .font_size(16)
+            .color(l_motor_temp_color)
+            .set(L_MOTOR_C_LABEL, ui);
+        
+        // Right motor temp
+        
+        Label::new(format!("R Motor").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 240.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(R_MOTOR_TEMP_LABEL, ui);
+        
+        let (r_motor_temp, r_motor_temp_color) =
+            match self.r_motor_temp {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("UNAVAILABLE".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(r_motor_temp.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 240.0)
+            .font_size(16)
+            .color(r_motor_temp_color)
+            .set(R_MOTOR_C_LABEL, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
         
-        self.volt_graph_12.draw(c.trans(ui.win_w - 205.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 320.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
     
     pub fn handle_packet(&mut self, packet: String) {
@@ -278,14 +351,36 @@ impl TelemetryUi {
                 self.l_rpm_status = packet_parts[1].clone();
                 self.r_rpm_status = packet_parts[2].clone();
             },
-            "12V_VOLTAGE" => {
-                let point_x = self.volt_graph_12.num_points() as f64;
-                self.volt_graph_12.add_point(point_x, packet_parts[1].parse().unwrap());
-                if self.volt_graph_12.num_points() > 100 {
-                    self.volt_graph_12.x_interval = ((self.volt_graph_12.num_points() - 100) as f64,
-                                                      self.volt_graph_12.num_points() as f64);
+            "P-12E" => {
+                let point_x = self.v12_graph.num_points() as f64;
+                let volts_12 = packet_parts[1].parse().unwrap();
+                let amps_12 = packet_parts[2].parse().unwrap();
+                self.v12_graph.add_point(point_x, volts_12);
+                if self.v12_graph.num_points() > 100 {
+                    self.v12_graph.x_interval = ((self.v12_graph.num_points() - 100) as f64,
+                                                      self.v12_graph.num_points() as f64);
                 }
-                self.volts_12 = format!("{}V", packet_parts[1]);
+                self.va_12 = Some((volts_12, amps_12));
+            },
+            "L_MOTOR_TEMP" => {
+                let point_x = self.motor_temp_graph.num_points() as f64;
+                let l_motor_temp = packet_parts[1].parse().unwrap();
+                self.motor_temp_graph.add_point(point_x, l_motor_temp);
+                if self.motor_temp_graph.num_points() > 100 {
+                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points() - 100) as f64,
+                                                      self.motor_temp_graph.num_points() as f64);
+                }
+                self.l_motor_temp = Some(l_motor_temp);
+            },
+            "R_MOTOR_TEMP" => {
+                //let point_x = self.motor_temp_graph.num_points() as f64;
+                let r_motor_temp = packet_parts[1].parse().unwrap();
+                /*self.motor_temp_graph.add_point(point_x, l_motor_temp);
+                if self.motor_temp_graph.num_points() > 100 {
+                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points() - 100) as f64,
+                                                      self.motor_temp_graph.num_points() as f64);
+                }*/
+                self.r_motor_temp = Some(r_motor_temp);
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
@@ -334,3 +429,12 @@ const L_MOTOR_AMP_LABEL: WidgetId = L_MOTOR_RPM_LABEL + 1;
 const R_MOTOR_POWER_LABEL: WidgetId = L_MOTOR_AMP_LABEL + 1;
 const R_MOTOR_RPM_LABEL: WidgetId = R_MOTOR_POWER_LABEL + 1;
 const R_MOTOR_AMP_LABEL: WidgetId = R_MOTOR_RPM_LABEL + 1;
+
+// Temp section
+const TEMP_LABEL: WidgetId = R_MOTOR_AMP_LABEL + 1;
+
+const L_MOTOR_TEMP_LABEL: WidgetId = TEMP_LABEL + 1;
+const L_MOTOR_C_LABEL: WidgetId = L_MOTOR_TEMP_LABEL + 1;
+
+const R_MOTOR_TEMP_LABEL: WidgetId = L_MOTOR_C_LABEL + 1;
+const R_MOTOR_C_LABEL: WidgetId = R_MOTOR_TEMP_LABEL + 1;

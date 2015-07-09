@@ -318,7 +318,7 @@ impl NavigationUi {
                 self.l_rpm_status = packet_parts[1].clone();
                 self.r_rpm_status = packet_parts[2].clone();
             },
-            "12V_VOLTAGE" => {
+            "P-12E" => {
                 let point_x = self.voltage_graph.num_points() as f64;
                 self.voltage_graph.add_point(point_x, packet_parts[1].parse().unwrap());
                 if self.voltage_graph.num_points() > 100 {
