@@ -42,6 +42,8 @@ pub struct NavigationUi {
     pub max_rpm: f32,
     l_rpm_status: String,
     r_rpm_status: String,
+
+    pub sadl: f32,
     
     // Forward camera controls
     pub f_pan: f32,
@@ -69,6 +71,8 @@ impl NavigationUi {
             max_rpm: 100.0,
             l_rpm_status: "UNAVAILABLE".to_string(),
             r_rpm_status: "UNAVAILABLE".to_string(),
+
+            sadl: 0.0,
             
             f_pan: 90.0,
             f_tilt: 130.0,
@@ -269,6 +273,19 @@ impl NavigationUi {
                 self.try_update_f_tilt(new_tilt);
             })
             .set(F_TILT_SLIDER, ui);
+
+        // SADL slider
+        Slider::new(self.sadl, -100.0, 100.0)
+            .dimensions(150.0, 30.0)
+            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 520.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("SADL")
+            .label_color(white())
+            .react(|new_sadl| {
+                self.try_update_sadl(new_sadl);
+            })
+            .set(SADL_SLIDER, ui);
         
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
@@ -380,6 +397,15 @@ impl NavigationUi {
             Ok(0)
         }
     }
+
+    pub fn try_update_sadl(&mut self, sadl: f32) -> io::Result<usize> {
+        if (sadl - self.sadl).abs() > 5.0 || sadl == 0.0 || sadl == 100.0 {
+            self.sadl = sadl;
+            self.send_sadl()
+        } else {
+            Ok(0)
+        }
+    }
     
     pub fn try_update_blade(&mut self, blade: f32) -> io::Result<usize> {
         if (blade - self.blade).abs() > 1.0 || blade == -10.0 || blade == 10.0 {
@@ -409,9 +435,14 @@ impl NavigationUi {
         let packet = format!("D{}", self.f_tilt as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
+
+    pub fn send_sadl(&self) -> io::Result<usize> {
+        let packet = format!("E{}", self.sadl as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+    }
     
     pub fn send_blade(&self) -> io::Result<usize> {
-        let packet = format!("E{}", self.blade as i32);
+        let packet = format!("F{}", self.blade as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
 }
@@ -433,6 +464,7 @@ const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
+const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
