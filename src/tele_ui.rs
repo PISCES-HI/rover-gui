@@ -49,6 +49,15 @@ pub struct TelemetryUi {
     motor_temp_graph: LineGraph,
     l_motor_temp: Option<f64>,
     r_motor_temp: Option<f64>,
+    
+    // Weather section
+    wind_speed: Option<f64>,
+    altitude: Option<f64>,
+    baro: Option<f64>,
+    temp: Option<f64>,
+    
+    // IMU
+    pitch_roll_heading: Option<(f64, f64, f64)>,
 }
 
 impl TelemetryUi {
@@ -63,8 +72,8 @@ impl TelemetryUi {
             
             mission_time: MissionTime::Paused(time::Duration::zero()),
             
-            l_rpm_status: "UNAVAILABLE".to_string(),
-            r_rpm_status: "UNAVAILABLE".to_string(),
+            l_rpm_status: "NO DATA".to_string(),
+            r_rpm_status: "NO DATA".to_string(),
             
             v12_graph: v12_graph,
             va_12: None,
@@ -72,6 +81,13 @@ impl TelemetryUi {
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: None,
             r_motor_temp: None,
+            
+            wind_speed: None,
+            altitude: None,
+            baro: None,
+            temp: None,
+            
+            pitch_roll_heading: None,
         }
     }
     
@@ -179,16 +195,16 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(BUS_48_LABEL, ui);
         
-        Label::new(format!("{}V", 48).as_str())
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(V48_LABEL, ui);
         
-        Label::new(format!("{}A", 15).as_str())
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(A48_LABEL, ui);
         
         // 24 bus
@@ -199,16 +215,16 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(BUS_24_LABEL, ui);
         
-        Label::new(format!("{}V", 24.5).as_str())
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(V24_LABEL, ui);
         
-        Label::new(format!("{}A", 3.5).as_str())
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(A24_LABEL, ui);
         
         // 12 bus
@@ -227,8 +243,8 @@ impl TelemetryUi {
                      rgb(0.0, 1.0, 0.0))
                 },
                 None => {
-                    ("UNAVAILABLE".to_string(),
-                     "UNAVAILABLE".to_string(),
+                    ("NO DATA".to_string(),
+                     "NO DATA".to_string(),
                      rgb(1.0, 0.0, 0.0))
                 },
             };
@@ -252,16 +268,16 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_POWER_LABEL, ui);
         
-        Label::new("75% RPM")
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_RPM_LABEL, ui);
         
-        Label::new("2.5A")
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_AMP_LABEL, ui);
         
         // Right motor
@@ -272,16 +288,16 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_POWER_LABEL, ui);
         
-        Label::new("75% RPM")
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_RPM_LABEL, ui);
         
-        Label::new("2.6A")
+        Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
-            .color(rgb(0.0, 1.0, 0.0))
+            .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_AMP_LABEL, ui);
             
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -306,7 +322,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("UNAVAILABLE".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(l_motor_temp.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 220.0)
@@ -327,13 +343,167 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("UNAVAILABLE".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(r_motor_temp.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(r_motor_temp_color)
             .set(R_MOTOR_C_LABEL, ui);
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Weather section
+        
+        Label::new("Weather")
+            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 290.0)
+            .font_size(20)
+            .color(self.bg_color.plain_contrast())
+            .set(WEATHER_LABEL, ui);
+        
+        // Wind speed
+        
+        Label::new(format!("Wind Speed").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 320.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(WIND_LABEL, ui);
+        
+        let (wind_speed, wind_speed_color) =
+            match self.wind_speed {
+                Some(wind_speed) => {
+                    (format!("{0:.2} m/s", wind_speed), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(wind_speed.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 320.0)
+            .font_size(16)
+            .color(wind_speed_color)
+            .set(WIND_VALUE, ui);
+        
+        // Altitude
+        
+        Label::new(format!("Altitude").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 340.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(ALTITUDE_LABEL, ui);
+        
+        let (altitude, altitude_color) =
+            match self.altitude {
+                Some(alt) => {
+                    (format!("{0:.2} ft", alt), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(altitude.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 340.0)
+            .font_size(16)
+            .color(altitude_color)
+            .set(ALTITUDE_VALUE, ui);
+        
+        // Barometer
+        
+        Label::new(format!("Baro").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 360.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(BARO_LABEL, ui);
+        
+        let (baro, baro_color) =
+            match self.baro {
+                Some(baro) => {
+                    (format!("{0:.2} hPa", baro), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(baro.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 360.0)
+            .font_size(16)
+            .color(baro_color)
+            .set(BARO_VALUE, ui);
+        
+        // Temp
+        
+        Label::new(format!("Temp").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(WEATHER_TEMP_LABEL, ui);
+        
+        let (temp, temp_color) =
+            match self.temp {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(temp.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
+            .font_size(16)
+            .color(temp_color)
+            .set(WEATHER_TEMP_VALUE, ui);
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // IMU section
+        
+        Label::new("IMU")
+            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 500.0)
+            .font_size(20)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_LABEL, ui);
+            
+        let (pitch, roll, heading, color) =
+            match self.pitch_roll_heading {
+                Some((pitch, roll, heading)) => (format!("{0:.1}", pitch),
+                                                 format!("{0:.1}", roll),
+                                                 format!("{0:.1}", heading),
+                                                 rgb(0.0, 1.0, 0.0)),
+                None => ("NO DATA".to_string(), "NO DATA".to_string(),
+                         "NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        
+        // IMU pitch
+        
+        Label::new(format!("Pitch").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 530.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_PITCH_LABEL, ui);
+        
+        Label::new(pitch.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 530.0)
+            .font_size(16)
+            .color(l_motor_temp_color)
+            .set(IMU_PITCH_VALUE, ui);
+        
+        // IMU roll
+        
+        Label::new(format!("Roll").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 550.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_ROLL_LABEL, ui);
+        
+        Label::new(roll.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 550.0)
+            .font_size(16)
+            .color(r_motor_temp_color)
+            .set(IMU_ROLL_VALUE, ui);
+        
+        // IMU heading
+        
+        Label::new(format!("Heading").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 580.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_HEADING_LABEL, ui);
+        
+        Label::new(heading.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 580.0)
+            .font_size(16)
+            .color(r_motor_temp_color)
+            .set(IMU_HEADING_VALUE, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
@@ -381,6 +551,22 @@ impl TelemetryUi {
                                                       self.motor_temp_graph.num_points() as f64);
                 }*/
                 self.r_motor_temp = Some(r_motor_temp);
+            },
+            "IMU" => {
+                let ax: f64 = packet_parts[1].parse().unwrap();
+                let ay: f64 = packet_parts[2].parse().unwrap();
+                let az: f64 = packet_parts[3].parse().unwrap();
+                
+                let mx: f64 = packet_parts[7].parse().unwrap();
+                let my: f64 = packet_parts[8].parse().unwrap();
+                let mz: f64 = packet_parts[9].parse().unwrap();
+                
+                let roll = f64::atan2(ay, az);
+                let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
+                let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
+                                         mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+                
+                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading.to_degrees()));
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
@@ -438,3 +624,30 @@ const L_MOTOR_C_LABEL: WidgetId = L_MOTOR_TEMP_LABEL + 1;
 
 const R_MOTOR_TEMP_LABEL: WidgetId = L_MOTOR_C_LABEL + 1;
 const R_MOTOR_C_LABEL: WidgetId = R_MOTOR_TEMP_LABEL + 1;
+
+// Weather section
+const WEATHER_LABEL: WidgetId = R_MOTOR_C_LABEL + 1;
+
+const WIND_LABEL: WidgetId = WEATHER_LABEL + 1;
+const WIND_VALUE: WidgetId = WIND_LABEL + 1;
+
+const ALTITUDE_LABEL: WidgetId = WIND_VALUE + 1;
+const ALTITUDE_VALUE: WidgetId = ALTITUDE_LABEL + 1;
+
+const BARO_LABEL: WidgetId = ALTITUDE_VALUE + 1;
+const BARO_VALUE: WidgetId = BARO_LABEL + 1;
+
+const WEATHER_TEMP_LABEL: WidgetId = BARO_VALUE + 1;
+const WEATHER_TEMP_VALUE: WidgetId = WEATHER_TEMP_LABEL + 1;
+
+// IMU section
+const IMU_LABEL: WidgetId = WEATHER_TEMP_VALUE + 1;
+
+const IMU_PITCH_LABEL: WidgetId = IMU_LABEL + 1;
+const IMU_PITCH_VALUE: WidgetId = IMU_PITCH_LABEL + 1;
+
+const IMU_ROLL_LABEL: WidgetId = IMU_PITCH_VALUE + 1;
+const IMU_ROLL_VALUE: WidgetId = IMU_ROLL_LABEL + 1;
+
+const IMU_HEADING_LABEL: WidgetId = IMU_ROLL_VALUE + 1;
+const IMU_HEADING_VALUE: WidgetId = IMU_HEADING_LABEL + 1;

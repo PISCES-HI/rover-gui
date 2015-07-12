@@ -115,8 +115,8 @@ fn main() {
             
             if let Some(ref controller) = controller {
                 // Control RPM with analog sticks
-                let left_y = controller.get_axis(controller::Axis::LeftY).unwrap();
-                let right_y = controller.get_axis(controller::Axis::RightY).unwrap();
+                let left_y = controller.get_axis(controller::Axis::LeftY);
+                let right_y = controller.get_axis(controller::Axis::RightY);
                 
                 let l_rpm = -(left_y as f32 / 32768.0) * nav_ui.max_rpm;
                 let r_rpm = -(right_y as f32 / 32768.0) * nav_ui.max_rpm;
@@ -125,21 +125,21 @@ fn main() {
                 nav_ui.try_update_r_rpm(r_rpm);
                 
                 // Control pan with left/right arrow keys
-                if controller.get_button(controller::Button::DPadLeft).unwrap() {
+                if controller.get_button(controller::Button::DPadLeft) {
                     nav_ui.f_pan -= f32::min(5.0, nav_ui.f_pan - 0.0);
                     nav_ui.send_f_pan();
                 }
-                if controller.get_button(controller::Button::DPadRight).unwrap() {
+                if controller.get_button(controller::Button::DPadRight) {
                     nav_ui.f_pan += f32::min(5.0, 180.0 - nav_ui.f_pan);
                     nav_ui.send_f_pan();
                 }
                 
                 // Control tilt with up/down arrow keys
-                if controller.get_button(controller::Button::DPadDown).unwrap() {
+                if controller.get_button(controller::Button::DPadDown) {
                     nav_ui.f_tilt -= f32::min(5.0, nav_ui.f_tilt - 90.0);
                     nav_ui.send_f_tilt();
                 }
-                if controller.get_button(controller::Button::DPadUp).unwrap() {
+                if controller.get_button(controller::Button::DPadUp) {
                     nav_ui.f_tilt += f32::min(5.0, 180.0 - nav_ui.f_tilt);
                     nav_ui.send_f_tilt();
                 }

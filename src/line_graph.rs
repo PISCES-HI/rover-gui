@@ -37,7 +37,7 @@ impl LineGraph {
             let last_x_norm = (last_x - self.x_interval.0)/(self.x_interval.1 - self.x_interval.0);
             let last_y_norm = (last_y - self.y_interval.0)/(self.y_interval.1 - self.y_interval.0);
             
-            if x >= self.x_interval.0 && last_x <= self.x_interval.1 {
+            if last_x >= self.x_interval.0 && x <= self.x_interval.1 {
                 Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
                     .draw([last_x_norm * self.size.0, self.size.1 - last_y_norm*self.size.1,
                            x_norm * self.size.0, self.size.1 - y_norm*self.size.1],

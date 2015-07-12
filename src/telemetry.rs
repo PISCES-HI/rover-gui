@@ -49,7 +49,7 @@ fn main() {
     let mut ui = Ui::new(glyph_cache, theme);
     
     // Create a UDP socket to talk to the rover
-    let socket = UdpSocket::bind("0.0.0.0:30001").unwrap();
+    let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
     socket.send_to(b"connect me plz", ("10.10.153.25", 30001));
     
     let in_socket = socket.try_clone().unwrap();
