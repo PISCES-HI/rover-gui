@@ -49,6 +49,10 @@ pub struct TelemetryUi {
     motor_temp_graph: LineGraph,
     l_motor_temp: Option<f64>,
     r_motor_temp: Option<f64>,
+
+    // Avionics box temp
+    upper_avionics_temp: Option<f64>,
+    lower_avionics_temp: Option<f64>,
     
     // Weather section
     wind_speed: Option<f64>,
@@ -81,6 +85,9 @@ impl TelemetryUi {
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: None,
             r_motor_temp: None,
+
+            upper_avionics_temp: None,
+            lower_avionics_temp: None,
             
             wind_speed: None,
             altitude: None,
@@ -350,12 +357,54 @@ impl TelemetryUi {
             .font_size(16)
             .color(r_motor_temp_color)
             .set(R_MOTOR_C_LABEL, ui);
+
+        // Upper avionics box temp
+        
+        Label::new(format!("Upper Avionics").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 260.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(UPR_A_TEMP_LABEL, ui);
+        
+        let (upper_avionics_temp, upper_avionics_temp_color) =
+            match self.upper_avionics_temp {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(upper_avionics_temp.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 260.0)
+            .font_size(16)
+            .color(upper_avionics_temp_color)
+            .set(UPR_A_TEMP_VALUE, ui);
+
+        // Lower avionics box temp
+        
+        Label::new(format!("Lower Avionics").as_str())
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(LWR_A_TEMP_LABEL, ui);
+        
+        let (lower_avionics_temp, lower_avionics_temp_color) =
+            match self.lower_avionics_temp {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(lower_avionics_temp.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 280.0)
+            .font_size(16)
+            .color(lower_avionics_temp_color)
+            .set(LWR_A_TEMP_VALUE, ui);
         
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Weather section
         
         Label::new("Weather")
-            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 290.0)
+            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 350.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_LABEL, ui);
@@ -363,7 +412,7 @@ impl TelemetryUi {
         // Wind speed
         
         Label::new(format!("Wind Speed").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 320.0)
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WIND_LABEL, ui);
@@ -376,7 +425,7 @@ impl TelemetryUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(wind_speed.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 320.0)
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
             .font_size(16)
             .color(wind_speed_color)
             .set(WIND_VALUE, ui);
@@ -384,7 +433,7 @@ impl TelemetryUi {
         // Altitude
         
         Label::new(format!("Altitude").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 340.0)
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 400.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(ALTITUDE_LABEL, ui);
@@ -397,7 +446,7 @@ impl TelemetryUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(altitude.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 340.0)
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 400.0)
             .font_size(16)
             .color(altitude_color)
             .set(ALTITUDE_VALUE, ui);
@@ -405,7 +454,7 @@ impl TelemetryUi {
         // Barometer
         
         Label::new(format!("Baro").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 360.0)
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 420.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(BARO_LABEL, ui);
@@ -418,7 +467,7 @@ impl TelemetryUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(baro.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 360.0)
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
             .color(baro_color)
             .set(BARO_VALUE, ui);
@@ -426,7 +475,7 @@ impl TelemetryUi {
         // Temp
         
         Label::new(format!("Temp").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 440.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_TEMP_LABEL, ui);
@@ -439,7 +488,7 @@ impl TelemetryUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Label::new(temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 440.0)
             .font_size(16)
             .color(temp_color)
             .set(WEATHER_TEMP_VALUE, ui);
@@ -494,13 +543,13 @@ impl TelemetryUi {
         // IMU heading
         
         Label::new(format!("Heading").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 580.0)
+            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 570.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
         
         Label::new(heading.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 580.0)
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 570.0)
             .font_size(16)
             .color(r_motor_temp_color)
             .set(IMU_HEADING_VALUE, ui);
@@ -551,6 +600,14 @@ impl TelemetryUi {
                                                       self.motor_temp_graph.num_points() as f64);
                 }*/
                 self.r_motor_temp = Some(r_motor_temp);
+            },
+            "UPR_A_TEMP" => {
+                let temp = packet_parts[1].parse().unwrap();
+                self.upper_avionics_temp = Some(temp);
+            },
+            "LWR_A_TEMP" => {
+                let temp = packet_parts[1].parse().unwrap();
+                self.lower_avionics_temp = Some(temp);
             },
             "IMU" => {
                 let ax: f64 = packet_parts[1].parse().unwrap();
@@ -625,8 +682,14 @@ const L_MOTOR_C_LABEL: WidgetId = L_MOTOR_TEMP_LABEL + 1;
 const R_MOTOR_TEMP_LABEL: WidgetId = L_MOTOR_C_LABEL + 1;
 const R_MOTOR_C_LABEL: WidgetId = R_MOTOR_TEMP_LABEL + 1;
 
+const UPR_A_TEMP_LABEL: WidgetId = R_MOTOR_C_LABEL + 1;
+const UPR_A_TEMP_VALUE: WidgetId = UPR_A_TEMP_LABEL + 1;
+
+const LWR_A_TEMP_LABEL: WidgetId = UPR_A_TEMP_VALUE + 1;
+const LWR_A_TEMP_VALUE: WidgetId = LWR_A_TEMP_LABEL + 1;
+
 // Weather section
-const WEATHER_LABEL: WidgetId = R_MOTOR_C_LABEL + 1;
+const WEATHER_LABEL: WidgetId = LWR_A_TEMP_VALUE + 1;
 
 const WIND_LABEL: WidgetId = WEATHER_LABEL + 1;
 const WIND_VALUE: WidgetId = WIND_LABEL + 1;
