@@ -41,9 +41,15 @@ pub struct TelemetryUi {
     // RPM stuff
     l_rpm_status: String,
     r_rpm_status: String,
-    
+
+    // Voltage stuff
+    v24_graph: LineGraph,
+    v_h_24: Option<(f64, f64)>,
+
     v12_graph: LineGraph,
-    va_12: Option<(f64, f64)>,
+    v_p_12_e: Option<(f64, f64)>,
+
+    v_p_12_pl: Option<(f64, f64)>,
     
     // Motor temp
     motor_temp_graph: LineGraph,
@@ -56,8 +62,8 @@ pub struct TelemetryUi {
     
     // Weather section
     wind_speed: Option<f64>,
+    pressure: Option<f64>,
     altitude: Option<f64>,
-    baro: Option<f64>,
     temp: Option<f64>,
     
     // IMU
@@ -66,6 +72,7 @@ pub struct TelemetryUi {
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
+        let v24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0));
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0));
         let motor_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 100.0));
     
@@ -79,8 +86,13 @@ impl TelemetryUi {
             l_rpm_status: "NO DATA".to_string(),
             r_rpm_status: "NO DATA".to_string(),
             
+            v24_graph: v24_graph,
+            v_h_24: None,
+
             v12_graph: v12_graph,
-            va_12: None,
+            v_p_12_e: None,
+
+            v_p_12_pl: None,
             
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: None,
@@ -90,8 +102,8 @@ impl TelemetryUi {
             lower_avionics_temp: None,
             
             wind_speed: None,
+            pressure: None,
             altitude: None,
-            baro: None,
             temp: None,
             
             pitch_roll_heading: None,
@@ -200,19 +212,19 @@ impl TelemetryUi {
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(BUS_48_LABEL, ui);
+            .set(H_48_LABEL, ui);
         
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
-            .set(V48_LABEL, ui);
+            .set(H_48_V_VALUE, ui);
         
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
-            .set(A48_LABEL, ui);
+            .set(H_48_A_VALUE, ui);
         
         // 24 bus
         
@@ -220,30 +232,43 @@ impl TelemetryUi {
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(BUS_24_LABEL, ui);
+            .set(H_24_LABEL, ui);
         
-        Label::new("NO DATA")
+        let (h_24_v, h_24_a, v_h_24_color) =
+            match self.v_h_24 {
+                Some((v, a)) => {
+                    (format!("{0:.2}V", v),
+                     format!("{0:.2}A", a),
+                     rgb(0.0, 1.0, 0.0))
+                },
+                None => {
+                    ("NO DATA".to_string(),
+                     "NO DATA".to_string(),
+                     rgb(1.0, 0.0, 0.0))
+                },
+            };
+        Label::new(h_24_v.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
-            .set(V24_LABEL, ui);
+            .color(v_h_24_color)
+            .set(H_24_V_VALUE, ui);
         
-        Label::new("NO DATA")
+        Label::new(h_24_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
-            .set(A24_LABEL, ui);
+            .color(v_h_24_color)
+            .set(H_24_A_VALUE, ui);
         
-        // 12 bus
+        // P-12 E bus
         
         Label::new(format!("P-12 E Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(BUS_12_LABEL, ui);
+            .set(P_12_E_LABEL, ui);
         
-        let (volts_12, amps_12, va_12_color) =
-            match self.va_12 {
+        let (volts_12, amps_12, v_p_12_e_color) =
+            match self.v_p_12_e {
                 Some((v, a)) => {
                     (format!("{0:.2}V", v),
                      format!("{0:.2}A", a),
@@ -258,31 +283,64 @@ impl TelemetryUi {
         Label::new(volts_12.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(va_12_color)
-            .set(V12_LABEL, ui);
+            .color(v_p_12_e_color)
+            .set(P_12_E_V_VALUE, ui);
         
         Label::new(amps_12.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(va_12_color)
-            .set(A12_LABEL, ui);
+            .color(v_p_12_e_color)
+            .set(P_12_E_A_VALUE, ui);
+
+        // P-12 PL bus
+        
+        Label::new(format!("P-12 PL Bus").as_str())
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(P_12_PL_LABEL, ui);
+        
+        let (p_12_pl_v, p_12_pl_a, v_p_12_pl_color) =
+            match self.v_p_12_pl {
+                Some((v, a)) => {
+                    (format!("{0:.2}V", v),
+                     format!("{0:.2}A", a),
+                     rgb(0.0, 1.0, 0.0))
+                },
+                None => {
+                    ("NO DATA".to_string(),
+                     "NO DATA".to_string(),
+                     rgb(1.0, 0.0, 0.0))
+                },
+            };
+        Label::new(p_12_pl_v.as_str())
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
+            .font_size(16)
+            .color(v_p_12_pl_color)
+            .set(P_12_PL_V_VALUE, ui);
+        
+        Label::new(p_12_pl_a.as_str())
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
+            .font_size(16)
+            .color(v_p_12_pl_color)
+            .set(P_12_PL_A_VALUE, ui);
             
         // Left motor
         
         Label::new(format!("L Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_POWER_LABEL, ui);
         
         Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_RPM_LABEL, ui);
         
         Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_AMP_LABEL, ui);
@@ -290,19 +348,19 @@ impl TelemetryUi {
         // Right motor
         
         Label::new(format!("R Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 520.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_POWER_LABEL, ui);
         
         Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
+            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_RPM_LABEL, ui);
         
         Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
+            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_AMP_LABEL, ui);
@@ -451,26 +509,26 @@ impl TelemetryUi {
             .color(altitude_color)
             .set(ALTITUDE_VALUE, ui);
         
-        // Barometer
+        // Pressure
         
-        Label::new(format!("Baro").as_str())
+        Label::new(format!("Pressure").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 420.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(BARO_LABEL, ui);
+            .set(PRESSURE_LABEL, ui);
         
-        let (baro, baro_color) =
-            match self.baro {
-                Some(baro) => {
-                    (format!("{0:.2} hPa", baro), rgb(0.0, 1.0, 0.0))
+        let (pressure, pressure_color) =
+            match self.pressure {
+                Some(pressure) => {
+                    (format!("{0:.2} hPa", pressure), rgb(0.0, 1.0, 0.0))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(baro.as_str())
+        Label::new(pressure.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
-            .color(baro_color)
-            .set(BARO_VALUE, ui);
+            .color(pressure_color)
+            .set(PRESSURE_VALUE, ui);
         
         // Temp
         
@@ -570,16 +628,27 @@ impl TelemetryUi {
                 self.l_rpm_status = packet_parts[1].clone();
                 self.r_rpm_status = packet_parts[2].clone();
             },
-            "P-12E" => {
+            "VOLT" => {
+                let point_x = self.v24_graph.num_points() as f64;
+                let v_h_24 = packet_parts[1].parse().unwrap();
+                self.v24_graph.add_point(point_x, v_h_24);
+                if self.v24_graph.num_points() > 100 {
+                    self.v24_graph.x_interval = ((self.v24_graph.num_points() - 100) as f64,
+                                                  self.v24_graph.num_points() as f64);
+                }
+                self.v_h_24 = Some((v_h_24, 0.0));
+
                 let point_x = self.v12_graph.num_points() as f64;
-                let volts_12 = packet_parts[1].parse().unwrap();
-                let amps_12 = packet_parts[2].parse().unwrap();
-                self.v12_graph.add_point(point_x, volts_12);
+                let v_p_12_e = packet_parts[2].parse().unwrap();
+                self.v12_graph.add_point(point_x, v_p_12_e);
                 if self.v12_graph.num_points() > 100 {
                     self.v12_graph.x_interval = ((self.v12_graph.num_points() - 100) as f64,
-                                                      self.v12_graph.num_points() as f64);
+                                                  self.v12_graph.num_points() as f64);
                 }
-                self.va_12 = Some((volts_12, amps_12));
+                self.v_p_12_e = Some((v_p_12_e, 0.0));
+
+                let v_p_12_pl = packet_parts[3].parse().unwrap();
+                self.v_p_12_pl = Some((v_p_12_pl, 0.0));
             },
             "L_MOTOR_TEMP" => {
                 let point_x = self.motor_temp_graph.num_points() as f64;
@@ -608,6 +677,20 @@ impl TelemetryUi {
             "LWR_A_TEMP" => {
                 let temp = packet_parts[1].parse().unwrap();
                 self.lower_avionics_temp = Some(temp);
+            },
+            "W_TEMP" => {
+                let temp = packet_parts[1].parse().unwrap();
+                self.temp = Some(temp);
+            },
+            "W_PR_ALT" => {
+                let pressure = packet_parts[1].parse().unwrap();
+                let altitude= packet_parts[2].parse().unwrap();
+                self.pressure = Some(pressure);
+                self.altitude = Some(altitude);
+            },
+            "W_WND_SPD" => {
+                let wind_speed = packet_parts[1].parse().unwrap();
+                self.wind_speed = Some(wind_speed);
             },
             "IMU" => {
                 let ax: f64 = packet_parts[1].parse().unwrap();
@@ -653,19 +736,23 @@ const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
 // Power section
 const POWER_LABEL: WidgetId = TIME_DELAY + 1;
 
-const BUS_48_LABEL: WidgetId = POWER_LABEL + 1;
-const V48_LABEL: WidgetId = BUS_48_LABEL + 1;
-const A48_LABEL: WidgetId = V48_LABEL + 1;
+const H_48_LABEL: WidgetId = POWER_LABEL + 1;
+const H_48_V_VALUE: WidgetId = H_48_LABEL + 1;
+const H_48_A_VALUE: WidgetId = H_48_V_VALUE + 1;
 
-const BUS_24_LABEL: WidgetId = A48_LABEL + 1;
-const V24_LABEL: WidgetId = BUS_24_LABEL + 1;
-const A24_LABEL: WidgetId = V24_LABEL + 1;
+const H_24_LABEL: WidgetId = H_48_A_VALUE + 1;
+const H_24_V_VALUE: WidgetId = H_24_LABEL + 1;
+const H_24_A_VALUE: WidgetId = H_24_V_VALUE + 1;
 
-const BUS_12_LABEL: WidgetId = A24_LABEL + 1;
-const V12_LABEL: WidgetId = BUS_12_LABEL + 1;
-const A12_LABEL: WidgetId = V12_LABEL + 1;
+const P_12_E_LABEL: WidgetId = H_24_A_VALUE + 1;
+const P_12_E_V_VALUE: WidgetId = P_12_E_LABEL + 1;
+const P_12_E_A_VALUE: WidgetId = P_12_E_V_VALUE + 1;
 
-const L_MOTOR_POWER_LABEL: WidgetId = A12_LABEL + 1;
+const P_12_PL_LABEL: WidgetId = P_12_E_A_VALUE + 1;
+const P_12_PL_V_VALUE: WidgetId = P_12_PL_LABEL + 1;
+const P_12_PL_A_VALUE: WidgetId = P_12_PL_V_VALUE + 1;
+
+const L_MOTOR_POWER_LABEL: WidgetId = P_12_PL_A_VALUE + 1;
 const L_MOTOR_RPM_LABEL: WidgetId = L_MOTOR_POWER_LABEL + 1;
 const L_MOTOR_AMP_LABEL: WidgetId = L_MOTOR_RPM_LABEL + 1;
 
@@ -697,10 +784,10 @@ const WIND_VALUE: WidgetId = WIND_LABEL + 1;
 const ALTITUDE_LABEL: WidgetId = WIND_VALUE + 1;
 const ALTITUDE_VALUE: WidgetId = ALTITUDE_LABEL + 1;
 
-const BARO_LABEL: WidgetId = ALTITUDE_VALUE + 1;
-const BARO_VALUE: WidgetId = BARO_LABEL + 1;
+const PRESSURE_LABEL: WidgetId = ALTITUDE_VALUE + 1;
+const PRESSURE_VALUE: WidgetId = PRESSURE_LABEL + 1;
 
-const WEATHER_TEMP_LABEL: WidgetId = BARO_VALUE + 1;
+const WEATHER_TEMP_LABEL: WidgetId = PRESSURE_VALUE + 1;
 const WEATHER_TEMP_VALUE: WidgetId = WEATHER_TEMP_LABEL + 1;
 
 // IMU section

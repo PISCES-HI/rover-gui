@@ -24,8 +24,6 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
 use time;
 
-use line_graph::LineGraph;
-
 enum MissionTime {
     Paused(time::Duration),
     Running(time::Tm, time::Duration),
@@ -44,23 +42,17 @@ pub struct NavigationUi {
     r_rpm_status: String,
 
     pub sadl: f32,
+    pub blade: f32,
     
     // Forward camera controls
     pub f_pan: f32,
     pub f_tilt: f32,
-    
-    // Blade controls
-    blade: f32,
-    
-    voltage_graph: LineGraph,
     
     socket: UdpSocket,
 }
 
 impl NavigationUi {
     pub fn new(socket: UdpSocket) -> NavigationUi {
-        let voltage_graph = LineGraph::new((200.0, 100.0), (0.0, 100.0), (0.0, 20.0));
-    
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             
@@ -73,13 +65,10 @@ impl NavigationUi {
             r_rpm_status: "UNAVAILABLE".to_string(),
 
             sadl: 0.0,
+            blade: 0.0,
             
             f_pan: 90.0,
             f_tilt: 130.0,
-            
-            blade: 0.0,
-            
-            voltage_graph: voltage_graph,
             
             socket: socket,
         }
@@ -335,14 +324,6 @@ impl NavigationUi {
                 self.l_rpm_status = packet_parts[1].clone();
                 self.r_rpm_status = packet_parts[2].clone();
             },
-            "P-12E" => {
-                let point_x = self.voltage_graph.num_points() as f64;
-                self.voltage_graph.add_point(point_x, packet_parts[1].parse().unwrap());
-                if self.voltage_graph.num_points() > 100 {
-                    self.voltage_graph.x_interval = ((self.voltage_graph.num_points() - 100) as f64,
-                                                      self.voltage_graph.num_points() as f64);
-                }
-            },
             "GPS" => {
                 println!("{}", packet);
             },
@@ -437,7 +418,7 @@ impl NavigationUi {
     }
 
     pub fn send_sadl(&self) -> io::Result<usize> {
-        let packet = format!("E{}", self.sadl as i32);
+        let packet = format!("F{}", self.sadl as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
     
