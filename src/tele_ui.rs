@@ -35,9 +35,9 @@ pub struct TelemetryUi {
     socket: UdpSocket,
 
     bg_color: Color,
-    
+
     mission_time: MissionTime,
-    
+
     // RPM stuff
     l_rpm_status: String,
     r_rpm_status: String,
@@ -50,7 +50,7 @@ pub struct TelemetryUi {
     v_p_12_e: Option<(f64, f64)>,
 
     v_p_12_pl: Option<(f64, f64)>,
-    
+
     // Motor temp
     motor_temp_graph: LineGraph,
     l_motor_temp: Option<f64>,
@@ -59,13 +59,13 @@ pub struct TelemetryUi {
     // Avionics box temp
     upper_avionics_temp: Option<f64>,
     lower_avionics_temp: Option<f64>,
-    
+
     // Weather section
     wind_speed: Option<f64>,
     pressure: Option<f64>,
     altitude: Option<f64>,
     temp: Option<f64>,
-    
+
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
 }
@@ -75,17 +75,17 @@ impl TelemetryUi {
         let v24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0));
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0));
         let motor_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 100.0));
-    
+
         TelemetryUi {
             socket: socket,
-        
+
             bg_color: rgb(0.2, 0.35, 0.45),
-            
+
             mission_time: MissionTime::Paused(time::Duration::zero()),
-            
+
             l_rpm_status: "NO DATA".to_string(),
             r_rpm_status: "NO DATA".to_string(),
-            
+
             v24_graph: v24_graph,
             v_h_24: None,
 
@@ -93,45 +93,45 @@ impl TelemetryUi {
             v_p_12_e: None,
 
             v_p_12_pl: None,
-            
+
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: None,
             r_motor_temp: None,
 
             upper_avionics_temp: None,
             lower_avionics_temp: None,
-            
+
             wind_speed: None,
             pressure: None,
             altitude: None,
             temp: None,
-            
+
             pitch_roll_heading: None,
         }
     }
-    
+
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
         use graphics::*;
-    
+
         // Draw the background.
         Background::new().color(self.bg_color).draw(ui, gl);
-        
+
         let time_now = time::now();
-        
+
         // Local time
         Label::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
             .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 10.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(LOCAL_TIME, ui);
-        
+
         // UTC time
         Label::new(format!("{}", time_now.to_utc().strftime("%Z  %x  %X").unwrap()).as_str())
             .xy((-ui.win_w / 2.0) + 104.0, (ui.win_h / 2.0) - 30.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(UTC_TIME, ui);
-        
+
         // Mission time label
         let mission_time =
             match self.mission_time {
@@ -143,7 +143,7 @@ impl TelemetryUi {
         let total_hours = mission_time.num_hours();
         let total_minutes = mission_time.num_minutes();
         let total_seconds = mission_time.num_seconds();
-        
+
         let days = total_days;
         let hours = total_hours - total_days*24;
         let minutes = total_minutes - total_hours*60;
@@ -153,7 +153,7 @@ impl TelemetryUi {
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(MISSION_TIME_LABEL, ui);
-        
+
         // Mission start/pause button
         let mission_start_text =
             match self.mission_time {
@@ -177,7 +177,7 @@ impl TelemetryUi {
                 };
             })
             .set(MISSION_START_BUTTON, ui);
-        
+
         // Mission reset button
         Button::new()
             .dimensions(100.0, 30.0)
@@ -189,57 +189,72 @@ impl TelemetryUi {
                 self.mission_time = MissionTime::Paused(time::Duration::zero());
             })
             .set(MISSION_RESET_BUTTON, ui);
-        
+
         // Time delay
         Label::new("Time Delay: 0s")
             .xy((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Power section
-        
+
         Label::new("Power")
             .xy((-ui.win_w / 2.0) + 110.0, (ui.win_h / 2.0) - 190.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(POWER_LABEL, ui);
-        
+
         // 48 bus
-        
+
         Label::new(format!("48 Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(H_48_LABEL, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(H_48_V_VALUE, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(H_48_A_VALUE, ui);
-        
+
         // 24 bus
-        
+
         Label::new(format!("24 H-Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(H_24_LABEL, ui);
-        
+
+        //casey added these here .. not sure if they reset or not >_> .. are these global? idk! yayyy
+        let h_24_avg_v_counter = 0;
+        let avg_v = 0.0;
+
         let (h_24_v, h_24_a, v_h_24_color) =
             match self.v_h_24 {
                 Some((v, a)) => {
                     (format!("{0:.2}V", v),
                      format!("{0:.2}A", a),
                      rgb(0.0, 1.0, 0.0))
+                     //Casey change here to try average out voltage stuff?
+                     let avg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+                     avg[i] = v;
+                     //not sure if this counts 10 or 9
+                     for x in 0..9{
+                         let avg_v = avg_v + avg[x];
+                     }
+                     h_24_avg_v_counter++;
+                     if i > 9{
+                         i = 0;
+                     }
                 },
                 None => {
                     ("NO DATA".to_string(),
@@ -252,21 +267,21 @@ impl TelemetryUi {
             .font_size(16)
             .color(v_h_24_color)
             .set(H_24_V_VALUE, ui);
-        
+
         Label::new(h_24_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
             .color(v_h_24_color)
             .set(H_24_A_VALUE, ui);
-        
+
         // P-12 E bus
-        
+
         Label::new(format!("P-12 E Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(P_12_E_LABEL, ui);
-        
+
         let (volts_12, amps_12, v_p_12_e_color) =
             match self.v_p_12_e {
                 Some((v, a)) => {
@@ -285,7 +300,7 @@ impl TelemetryUi {
             .font_size(16)
             .color(v_p_12_e_color)
             .set(P_12_E_V_VALUE, ui);
-        
+
         Label::new(amps_12.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
@@ -293,13 +308,13 @@ impl TelemetryUi {
             .set(P_12_E_A_VALUE, ui);
 
         // P-12 PL bus
-        
+
         Label::new(format!("P-12 PL Bus").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(P_12_PL_LABEL, ui);
-        
+
         let (p_12_pl_v, p_12_pl_a, v_p_12_pl_color) =
             match self.v_p_12_pl {
                 Some((v, a)) => {
@@ -318,70 +333,70 @@ impl TelemetryUi {
             .font_size(16)
             .color(v_p_12_pl_color)
             .set(P_12_PL_V_VALUE, ui);
-        
+
         Label::new(p_12_pl_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
             .color(v_p_12_pl_color)
             .set(P_12_PL_A_VALUE, ui);
-            
+
         // Left motor
-        
+
         Label::new(format!("L Motor").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_POWER_LABEL, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_RPM_LABEL, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(L_MOTOR_AMP_LABEL, ui);
-        
+
         // Right motor
-        
+
         Label::new(format!("R Motor").as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 520.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_POWER_LABEL, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_RPM_LABEL, ui);
-        
+
         Label::new("NO DATA")
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(R_MOTOR_AMP_LABEL, ui);
-            
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Temp section
-        
+
         Label::new("Temp")
             .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 190.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(TEMP_LABEL, ui);
-        
+
         // Left motor temp
-        
+
         Label::new(format!("L Motor").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_TEMP_LABEL, ui);
-        
+
         let (l_motor_temp, l_motor_temp_color) =
             match self.l_motor_temp {
                 Some(temp) => {
@@ -394,15 +409,15 @@ impl TelemetryUi {
             .font_size(16)
             .color(l_motor_temp_color)
             .set(L_MOTOR_C_LABEL, ui);
-        
+
         // Right motor temp
-        
+
         Label::new(format!("R Motor").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 240.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_TEMP_LABEL, ui);
-        
+
         let (r_motor_temp, r_motor_temp_color) =
             match self.r_motor_temp {
                 Some(temp) => {
@@ -417,13 +432,13 @@ impl TelemetryUi {
             .set(R_MOTOR_C_LABEL, ui);
 
         // Upper avionics box temp
-        
+
         Label::new(format!("Upper Avionics").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 260.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(UPR_A_TEMP_LABEL, ui);
-        
+
         let (upper_avionics_temp, upper_avionics_temp_color) =
             match self.upper_avionics_temp {
                 Some(temp) => {
@@ -438,13 +453,13 @@ impl TelemetryUi {
             .set(UPR_A_TEMP_VALUE, ui);
 
         // Lower avionics box temp
-        
+
         Label::new(format!("Lower Avionics").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(LWR_A_TEMP_LABEL, ui);
-        
+
         let (lower_avionics_temp, lower_avionics_temp_color) =
             match self.lower_avionics_temp {
                 Some(temp) => {
@@ -457,24 +472,24 @@ impl TelemetryUi {
             .font_size(16)
             .color(lower_avionics_temp_color)
             .set(LWR_A_TEMP_VALUE, ui);
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Weather section
-        
+
         Label::new("Weather")
             .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 350.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_LABEL, ui);
-        
+
         // Wind speed
-        
+
         Label::new(format!("Wind Speed").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WIND_LABEL, ui);
-        
+
         let (wind_speed, wind_speed_color) =
             match self.wind_speed {
                 Some(wind_speed) => {
@@ -487,15 +502,15 @@ impl TelemetryUi {
             .font_size(16)
             .color(wind_speed_color)
             .set(WIND_VALUE, ui);
-        
+
         // Altitude
-        
+
         Label::new(format!("Altitude").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 400.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(ALTITUDE_LABEL, ui);
-        
+
         let (altitude, altitude_color) =
             match self.altitude {
                 Some(alt) => {
@@ -508,15 +523,15 @@ impl TelemetryUi {
             .font_size(16)
             .color(altitude_color)
             .set(ALTITUDE_VALUE, ui);
-        
+
         // Pressure
-        
+
         Label::new(format!("Pressure").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 420.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(PRESSURE_LABEL, ui);
-        
+
         let (pressure, pressure_color) =
             match self.pressure {
                 Some(pressure) => {
@@ -529,15 +544,15 @@ impl TelemetryUi {
             .font_size(16)
             .color(pressure_color)
             .set(PRESSURE_VALUE, ui);
-        
+
         // Temp
-        
+
         Label::new(format!("Temp").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 440.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_TEMP_LABEL, ui);
-        
+
         let (temp, temp_color) =
             match self.temp {
                 Some(temp) => {
@@ -550,16 +565,16 @@ impl TelemetryUi {
             .font_size(16)
             .color(temp_color)
             .set(WEATHER_TEMP_VALUE, ui);
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // IMU section
-        
+
         Label::new("IMU")
             .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 500.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(IMU_LABEL, ui);
-            
+
         let (pitch, roll, heading, color) =
             match self.pitch_roll_heading {
                 Some((pitch, roll, heading)) => (format!("{0:.1}", pitch),
@@ -569,43 +584,43 @@ impl TelemetryUi {
                 None => ("NO DATA".to_string(), "NO DATA".to_string(),
                          "NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        
+
         // IMU pitch
-        
+
         Label::new(format!("Pitch").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 530.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_PITCH_LABEL, ui);
-        
+
         Label::new(pitch.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 530.0)
             .font_size(16)
             .color(l_motor_temp_color)
             .set(IMU_PITCH_VALUE, ui);
-        
+
         // IMU roll
-        
+
         Label::new(format!("Roll").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 550.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_ROLL_LABEL, ui);
-        
+
         Label::new(roll.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 550.0)
             .font_size(16)
             .color(r_motor_temp_color)
             .set(IMU_ROLL_VALUE, ui);
-        
+
         // IMU heading
-        
+
         Label::new(format!("Heading").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 570.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
-        
+
         Label::new(heading.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 570.0)
             .font_size(16)
@@ -614,15 +629,15 @@ impl TelemetryUi {
 
         // Draw our UI!
         ui.draw(c, gl);
-        
+
         self.v12_graph.draw(c.trans(ui.win_w - 405.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
         self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 320.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
-    
+
     pub fn handle_packet(&mut self, packet: String) {
         //println!("Got packet: {}", packet);
         let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
-        
+
         match packet_parts[0].as_str() {
             "RPM_STATUS" => {
                 self.l_rpm_status = packet_parts[1].clone();
@@ -696,28 +711,28 @@ impl TelemetryUi {
                 let ax: f64 = packet_parts[1].parse().unwrap();
                 let ay: f64 = packet_parts[2].parse().unwrap();
                 let az: f64 = packet_parts[3].parse().unwrap();
-                
+
                 let mx: f64 = packet_parts[7].parse().unwrap();
                 let my: f64 = packet_parts[8].parse().unwrap();
                 let mz: f64 = packet_parts[9].parse().unwrap();
-                
+
                 let roll = f64::atan2(ay, az);
                 let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
                 let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
                                          mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
-                
+
                 self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading.to_degrees()));
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
     }
-    
+
     pub fn on_key_pressed(&mut self, key: input::Key) {
         match key {
             _ => { },
         }
     }
-    
+
     pub fn on_key_released(&mut self, key: input::Key) {
         match key {
             _ => { },
