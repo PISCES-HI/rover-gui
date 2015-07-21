@@ -235,26 +235,27 @@ impl TelemetryUi {
             .set(H_24_LABEL, ui);
 
         //casey added these here .. not sure if they reset or not >_> .. are these global? idk! yayyy
-        let h_24_avg_v_counter = 0;
-        let avg_v = 0.0;
+        // let h_24_avg_v_counter = 0.0;
+        // let avg_v = 0.0;
 
         let (h_24_v, h_24_a, v_h_24_color) =
             match self.v_h_24 {
-                Some((v, a)) => {
-                    (format!("{0:.2}V", v),
-                     format!("{0:.2}A", a),
-                     rgb(0.0, 1.0, 0.0))
-                     //Casey change here to try average out voltage stuff?
-                     let avg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
-                     avg[i] = v;
-                     //not sure if this counts 10 or 9
-                     for x in 0..9{
-                         let avg_v = avg_v + avg[x];
-                     }
-                     h_24_avg_v_counter++;
-                     if i > 9{
-                         i = 0;
-                     }
+                    //  //Casey change here to try average out voltage stuff?
+                    //  let avg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+                    //  avg[i] = v;
+                    //  //not sure if this counts 10 or 9
+                    //  for x in 0..9{
+                    //      let avg_v = avg_v + avg[x];
+                    //  }
+                    //  v = avg_v / 10;
+                    //  h_24_avg_v_counter++;
+                    //  if i > 9{
+                    //      i = 0;
+                    //  }
+                     Some((v, a)) => {
+                         (format!("{0:.2}V", v),
+                          format!("{0:.2}A", a),
+                          rgb(0.0, 1.0, 0.0))
                 },
                 None => {
                     ("NO DATA".to_string(),
