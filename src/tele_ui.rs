@@ -641,6 +641,18 @@ impl TelemetryUi {
     let 12_e_avg_v_counter = 0;
     let 12_pl_avg_v_counter = 0;
 
+    //helloooooo casey just make a function instead of copying pasting -__-
+    //but then again .. this is rust and I have no idea what I'm doing
+    pub fn take_average(counter: i32){
+        let
+
+    }
+
+    //functon to calibrate the IMU
+    pub fun IMU_cal(){
+
+    }
+
     pub fn handle_packet(&mut self, packet: String) {
         //println!("Got packet: {}", packet);
         let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
@@ -658,10 +670,8 @@ impl TelemetryUi {
                 //I did put things in here! - Casey
                  let 24_temp = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
                  24_temp[24_h_avg_v_counter] = v_h_24;
-                 //not sure if this counts 10 or 9
-                 for x in 0..9{
-                     let avg_24_v = avg_24_v + 24_temp[x];
-                 }
+                 //not sure if this sums or not .. yay internet
+                 let avg_24_v = 24_temp.iter().fold(0, |avg_24_v, &b| a + b);
                  if(24_temp[9] != 0)
                  {
                      v_h_24 = avg_24_v / 10;
