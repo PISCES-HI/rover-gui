@@ -241,6 +241,7 @@ impl TelemetryUi {
         let (h_24_v, h_24_a, v_h_24_color) =
             match self.v_h_24 {
                     //  //Casey change here to try average out voltage stuff?
+                    //  NEVERMIND THIS IS THE VERY WRONG WRONG PLACE
                     //  let avg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
                     //  avg[i] = v;
                     //  //not sure if this counts 10 or 9
@@ -635,6 +636,11 @@ impl TelemetryUi {
         self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 320.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
 
+    //woooo global counter variables because I can't let them reset and I don't know how to do that help me teddy you're my only hope
+    let 24_h_avg_v_counter = 0;
+    let 12_e_avg_v_counter = 0;
+    let 12_pl_avg_v_counter = 0;
+
     pub fn handle_packet(&mut self, packet: String) {
         //println!("Got packet: {}", packet);
         let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
@@ -645,8 +651,26 @@ impl TelemetryUi {
                 self.r_rpm_status = packet_parts[2].clone();
             },
             "VOLT" => {
+
                 let point_x = self.v24_graph.num_points() as f64;
                 let v_h_24 = packet_parts[1].parse().unwrap();
+                //this is probably the place for Casey to put averaging things
+                //I did put things in here! - Casey
+                 let 24_temp = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+                 24_temp[24_h_avg_v_counter] = v_h_24;
+                 //not sure if this counts 10 or 9
+                 for x in 0..9{
+                     let avg_24_v = avg_24_v + 24_temp[x];
+                 }
+                 if(24_temp[9] != 0)
+                 {
+                     v_h_24 = avg_24_v / 10;
+                 }
+                 24_h_avg_v_counter++;
+                 if 24_h_avg_v_counter > 9{
+                     24_h_avg_v_counter = 0;
+                 }
+
                 self.v24_graph.add_point(point_x, v_h_24);
                 if self.v24_graph.num_points() > 100 {
                     self.v24_graph.x_interval = ((self.v24_graph.num_points() - 100) as f64,
@@ -656,6 +680,24 @@ impl TelemetryUi {
 
                 let point_x = self.v12_graph.num_points() as f64;
                 let v_p_12_e = packet_parts[2].parse().unwrap();
+
+                //I did put things in here! - Casey
+                 let 12_e_temp = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+                 12_e_temp[12_e_avg_v_counter] = v_p_12_e;
+                 //not sure if this counts 10 or 9
+                 for x in 0..9{
+                     let avg_12_v_e = avg_12_v_e + 12_e_temp[x];
+                 }
+                 //don't take the reading if we don't have 10 data points already lololloolol
+                 if(12_e_temp[9] != 0)
+                 {
+                     v_p_12_e = avg_12_v_e / 10;
+                 }
+                 12_e_avg_v_counter++;
+                 if 12_e_avg_v_counter > 9{
+                     12_e_avg_v_counter = 0;
+                 }
+
                 self.v12_graph.add_point(point_x, v_p_12_e);
                 if self.v12_graph.num_points() > 100 {
                     self.v12_graph.x_interval = ((self.v12_graph.num_points() - 100) as f64,
@@ -664,6 +706,24 @@ impl TelemetryUi {
                 self.v_p_12_e = Some((v_p_12_e, 0.0));
 
                 let v_p_12_pl = packet_parts[3].parse().unwrap();
+
+                //I did put things in here! - Casey
+                 let 12_pl_temp = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+                 12_pl_temp[12_e_avg_v_counter] = v_p_12_pl;
+                 //not sure if this counts 10 or 9
+                 for x in 0..9{
+                     let avg_12_v_pl = avg_12_v_pl + 12_pl_temp[x];
+                 }
+                 //don't take the reading if we don't have 10 data points already lololloolol
+                 if(12_pl_temp[9] != 0)
+                 {
+                     v_p_12_pl = avg_12_v_pl / 10;
+                 }
+                 12_pl_avg_v_counter++;
+                 if 12_pl_avg_v_counter > 9{
+                     12_pl_avg_v_counter = 0;
+                 }
+
                 self.v_p_12_pl = Some((v_p_12_pl, 0.0));
             },
             "L_MOTOR_TEMP" => {
@@ -707,6 +767,15 @@ impl TelemetryUi {
             "W_WND_SPD" => {
                 let wind_speed = packet_parts[1].parse().unwrap();
                 self.wind_speed = Some(wind_speed);
+            },
+            //Casey adding L+R motor currents
+            "L_MOTOR_CURRENT" => {
+                let left_motor_current = packet_parts[1].parse().unwrap();
+                self.left_motor_current  = Some(left_motor_current);
+            },
+            "R_MOTOR_CURRENT" => {
+                let right_motor_current = packet_parts[1].parse().unwrap();
+                self.right_motor_current  = Some(right_motor_current);
             },
             "IMU" => {
                 let ax: f64 = packet_parts[1].parse().unwrap();
