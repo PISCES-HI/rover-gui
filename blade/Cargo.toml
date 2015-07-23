@@ -1,0 +1,25 @@
+[package]
+name = "rover-gui"
+version = "0.1.0"
+authors = ["Theodore DeRego <tderego94@gmail.com>"]
+
+[[bin]]
+
+name="blade"
+path="../src/blade.rs"
+
+[dependencies.ffmpeg]
+git = "https://github.com/tedsta/rust-ffmpeg"
+features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+default-features = false
+
+[dependencies]
+
+time = "0.1.*"
+sdl2 = "*"
+pistoncore-sdl2_window = "0.4.0"
+piston = "0.3.0"
+piston2d-graphics = "0.4.0"
+piston2d-opengl_graphics = "0.4.0"
+image = "0.3.11"
+conrod = "*"
