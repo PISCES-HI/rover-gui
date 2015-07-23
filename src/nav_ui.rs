@@ -13,6 +13,7 @@ use conrod::{
     Positionable,
     Slider,
     Sizeable,
+    TextBox,
     Ui,
     WidgetId,
     Widget,
@@ -47,6 +48,8 @@ pub struct NavigationUi {
     // Forward camera controls
     pub f_pan: f32,
     pub f_tilt: f32,
+
+    pub command: String,
     
     socket: UdpSocket,
 }
@@ -69,6 +72,8 @@ impl NavigationUi {
             
             f_pan: 90.0,
             f_tilt: 130.0,
+
+            command: "".to_string(),
             
             socket: socket,
         }
@@ -266,7 +271,7 @@ impl NavigationUi {
         // SADL slider
         Slider::new(self.sadl, -100.0, 100.0)
             .dimensions(150.0, 30.0)
-            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 520.0)
+            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("SADL")
@@ -275,6 +280,22 @@ impl NavigationUi {
                 self.try_update_sadl(new_sadl);
             })
             .set(SADL_SLIDER, ui);
+
+        // Command section
+        Label::new("Command")
+            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 580.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(COMMAND_LABEL, ui);
+        
+        TextBox::new(&mut self.command)
+            .font_size(16)
+            .dimensions(320.0, 40.0)
+            .frame(1.0)
+            .frame_color(self.bg_color.invert().plain_contrast())
+            .color(self.bg_color.invert())
+            .react(|_string: &mut String|{})
+            .set(COMMAND_INPUT, ui);
         
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
@@ -446,6 +467,8 @@ const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
+const COMMAND_LABEL: WidgetId = SADL_SLIDER + 1;
+const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
