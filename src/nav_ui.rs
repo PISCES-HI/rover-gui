@@ -409,15 +409,6 @@ impl NavigationUi {
         }
     }
     
-    pub fn try_update_blade(&mut self, blade: f32) -> io::Result<usize> {
-        if (blade - self.blade).abs() > 1.0 || blade == -10.0 || blade == 10.0 {
-            self.blade = blade;
-            self.send_blade()
-        } else {
-            Ok(0)
-        }
-    }
-    
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
@@ -439,12 +430,7 @@ impl NavigationUi {
     }
 
     pub fn send_sadl(&self) -> io::Result<usize> {
-        let packet = format!("F{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
-    }
-    
-    pub fn send_blade(&self) -> io::Result<usize> {
-        let packet = format!("F{}", self.blade as i32);
+        let packet = format!("E{}", self.sadl as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
 }

@@ -123,6 +123,16 @@ fn main() {
                 
                 nav_ui.try_update_l_rpm(l_rpm);
                 nav_ui.try_update_r_rpm(r_rpm);
+
+                // Control SADL with A/Y buttons
+                if controller.get_button(controller::Button::A) {
+                    nav_ui.sadl = -100.0;
+                    nav_ui.send_sadl();
+                }
+                if controller.get_button(controller::Button::Y) {
+                    nav_ui.sadl = 100.0;
+                    nav_ui.send_sadl();
+                }
                 
                 // Control pan with left/right arrow keys
                 if controller.get_button(controller::Button::DPadLeft) {

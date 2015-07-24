@@ -43,16 +43,21 @@ pub struct TelemetryUi {
     r_rpm_status: String,
 
     // Voltage stuff
-    v24_graph: LineGraph,
-    v_h_24: Option<(f64, f64)>,
+    v48_graph: LineGraph,
+    h_48_v: Option<f64>,
+
+    a24_graph: LineGraph,
+    h_24_v: Option<f64>,
+    h_24_a: Option<f64>,
 
     v12_graph: LineGraph,
-    v_p_12_e: Option<(f64, f64)>,
+    p_12_e_v: Option<f64>,
+    p_12_e_a: Option<f64>,
 
-    v_p_12_pl: Option<(f64, f64)>,
+    p_12_pl_v: Option<(f64, f64)>,
 
-    left_motor_current: Option<f64>,
-    right_motor_current: Option<f64>,
+    l_motor_amp: Option<f64>,
+    r_motor_amp: Option<f64>,
 
     // Motor temp
     motor_temp_graph: LineGraph,
@@ -75,7 +80,8 @@ pub struct TelemetryUi {
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let v24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0));
+        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0));
+        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0));
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0));
         let motor_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 100.0));
 
@@ -89,16 +95,21 @@ impl TelemetryUi {
             l_rpm_status: "NO DATA".to_string(),
             r_rpm_status: "NO DATA".to_string(),
 
-            v24_graph: v24_graph,
-            v_h_24: None,
+            v48_graph: v48_graph,
+            h_48_v: None,
+
+            a24_graph: a24_graph,
+            h_24_v: None,
+            h_24_a: None,
 
             v12_graph: v12_graph,
-            v_p_12_e: None,
+            p_12_e_v: None,
+            p_12_e_a: None,
 
-            v_p_12_pl: None,
+            p_12_pl_v: None,
 
-            left_motor_current: None,
-            right_motor_current: None,
+            l_motor_amp: None,
+            r_motor_amp: None,
 
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: None,
@@ -240,46 +251,34 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(H_24_LABEL, ui);
 
-        //casey added these here .. not sure if they reset or not >_> .. are these global? idk! yayyy
-        // let h_24_avg_v_counter = 0.0;
-        // let avg_v = 0.0;
-
-        let (h_24_v, h_24_a, v_h_24_color) =
-            match self.v_h_24 {
-                    //  //Casey change here to try average out voltage stuff?
-                    //  NEVERMIND THIS IS THE VERY WRONG WRONG PLACE
-                    //  let avg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
-                    //  avg[i] = v;
-                    //  //not sure if this counts 10 or 9
-                    //  for x in 0..9{
-                    //      let avg_v = avg_v + avg[x];
-                    //  }
-                    //  v = avg_v / 10;
-                    //  h_24_avg_v_counter++;
-                    //  if i > 9{
-                    //      i = 0;
-                    //  }
-                     Some((v, a)) => {
-                         (format!("{0:.2}V", v),
-                          format!("{0:.2}A", a),
-                          rgb(0.0, 1.0, 0.0))
+        let (h_24_v, h_24_v_color) =
+            match self.h_24_v {
+                Some(v) => {
+                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
                 },
                 None => {
-                    ("NO DATA".to_string(),
-                     "NO DATA".to_string(),
-                     rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                },
+            };
+        let (h_24_a, h_24_a_color) =
+            match self.h_24_a {
+                Some(a) => {
+                    (format!("{0:.2}A", a), rgb(0.0, 1.0, 0.0))
+                },
+                None => {
+                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
         Label::new(h_24_v.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(v_h_24_color)
+            .color(h_24_v_color)
             .set(H_24_V_VALUE, ui);
 
         Label::new(h_24_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
-            .color(v_h_24_color)
+            .color(h_24_a_color)
             .set(H_24_A_VALUE, ui);
 
         // P-12 E bus
@@ -290,29 +289,34 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(P_12_E_LABEL, ui);
 
-        let (volts_12, amps_12, v_p_12_e_color) =
-            match self.v_p_12_e {
-                Some((v, a)) => {
-                    (format!("{0:.2}V", v),
-                     format!("{0:.2}A", a),
-                     rgb(0.0, 1.0, 0.0))
+        let (p_12_e_v, p_12_e_v_color) =
+            match self.p_12_e_v {
+                Some(v) => {
+                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
                 },
                 None => {
-                    ("NO DATA".to_string(),
-                     "NO DATA".to_string(),
-                     rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
-        Label::new(volts_12.as_str())
+        let (p_12_e_a, p_12_e_a_color) =
+            match self.p_12_e_a {
+                Some(a) => {
+                    (format!("{0:.2}A", a), rgb(0.0, 1.0, 0.0))
+                },
+                None => {
+                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                },
+            };
+        Label::new(p_12_e_v.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(v_p_12_e_color)
+            .color(p_12_e_v_color)
             .set(P_12_E_V_VALUE, ui);
 
-        Label::new(amps_12.as_str())
+        Label::new(p_12_e_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
-            .color(v_p_12_e_color)
+            .color(p_12_e_a_color)
             .set(P_12_E_A_VALUE, ui);
 
         // P-12 PL bus
@@ -323,8 +327,8 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(P_12_PL_LABEL, ui);
 
-        let (p_12_pl_v, p_12_pl_a, v_p_12_pl_color) =
-            match self.v_p_12_pl {
+        let (p_12_pl_v, p_12_pl_a, p_12_pl_v_color) =
+            match self.p_12_pl_v {
                 Some((v, a)) => {
                     (format!("{0:.2}V", v),
                      format!("{0:.2}A", a),
@@ -339,13 +343,13 @@ impl TelemetryUi {
         Label::new(p_12_pl_v.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
-            .color(v_p_12_pl_color)
+            .color(p_12_pl_v_color)
             .set(P_12_PL_V_VALUE, ui);
 
         Label::new(p_12_pl_a.as_str())
             .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
-            .color(v_p_12_pl_color)
+            .color(p_12_pl_v_color)
             .set(P_12_PL_A_VALUE, ui);
 
         // Left motor
@@ -356,16 +360,17 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_POWER_LABEL, ui);
 
-        Label::new("NO DATA")
+        let (l_motor_amp, l_motor_amp_color) =
+            match self.l_motor_amp {
+                Some(amp) => {
+                    (format!("{0:.2}A", amp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(l_motor_amp.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
-            .set(L_MOTOR_RPM_LABEL, ui);
-
-        Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 480.0)
-            .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
+            .color(l_motor_amp_color)
             .set(L_MOTOR_AMP_LABEL, ui);
 
         // Right motor
@@ -376,16 +381,17 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_POWER_LABEL, ui);
 
-        Label::new("NO DATA")
+        let (r_motor_amp, r_motor_amp_color) =
+            match self.r_motor_amp {
+                Some(amp) => {
+                    (format!("{0:.2}A", amp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(r_motor_amp.as_str())
             .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
-            .set(R_MOTOR_RPM_LABEL, ui);
-
-        Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 540.0)
-            .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
+            .color(l_motor_amp_color)
             .set(R_MOTOR_AMP_LABEL, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -638,8 +644,10 @@ impl TelemetryUi {
         // Draw our UI!
         ui.draw(c, gl);
 
-        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 100.0), gl, &mut *ui.glyph_cache.borrow_mut());
-        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 320.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.a24_graph.draw(c.trans(ui.win_w - 405.0, 185.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), gl, &mut *ui.glyph_cache.borrow_mut());
+        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -653,30 +661,49 @@ impl TelemetryUi {
             },
             "VOLT" => {
                 /////////////////////
-                let point_x = self.v24_graph.num_points() as f64;
-                let v_h_24 = packet_parts[1].parse().unwrap();
+                let point_x = self.v48_graph.num_points() as f64;
+                let h_48_v = packet_parts[1].parse().unwrap();
 
-                self.v24_graph.add_point(point_x, v_h_24);
-                if self.v24_graph.num_points() > 100 {
-                    self.v24_graph.x_interval = ((self.v24_graph.num_points() - 100) as f64,
-                                                  self.v24_graph.num_points() as f64);
+                self.v48_graph.add_point(point_x, h_48_v);
+                if self.v48_graph.num_points() > 100 {
+                    self.v48_graph.x_interval = ((self.v48_graph.num_points() - 100) as f64,
+                                                  self.v48_graph.num_points() as f64);
                 }
-                self.v_h_24 = Some((v_h_24, 0.0));
+                self.h_48_v = Some(h_48_v);
+
+                /////////////////////
+                let h_24_v = packet_parts[2].parse().unwrap();
+                self.h_24_v = Some(h_24_v);
 
                 /////////////////////
                 let point_x = self.v12_graph.num_points() as f64;
-                let v_p_12_e = packet_parts[2].parse().unwrap();
+                let p_12_e_v = packet_parts[3].parse().unwrap();
 
-                self.v12_graph.add_point(point_x, v_p_12_e);
+                self.v12_graph.add_point(point_x, p_12_e_v);
                 if self.v12_graph.num_points() > 100 {
                     self.v12_graph.x_interval = ((self.v12_graph.num_points() - 100) as f64,
                                                   self.v12_graph.num_points() as f64);
                 }
-                self.v_p_12_e = Some((v_p_12_e, 0.0));
+                self.p_12_e_v = Some(p_12_e_v);
 
                 /////////////////////
-                let v_p_12_pl = packet_parts[3].parse().unwrap();
-                self.v_p_12_pl = Some((v_p_12_pl, 0.0));
+                let p_12_pl_v = packet_parts[4].parse().unwrap();
+                self.p_12_pl_v = Some((p_12_pl_v, 0.0));
+            },
+            "AMP" => {
+                self.l_motor_amp  = Some(packet_parts[1].parse().unwrap());
+                self.r_motor_amp  = Some(packet_parts[2].parse().unwrap());
+                self.p_12_e_a  = Some(packet_parts[3].parse().unwrap());
+                
+                // h-24
+                let point_x = self.a24_graph.num_points() as f64;
+                let h_24_a = packet_parts[4].parse().unwrap();
+                self.a24_graph.add_point(point_x, h_24_a);
+                if self.a24_graph.num_points() > 100 {
+                    self.a24_graph.x_interval = ((self.a24_graph.num_points() - 100) as f64,
+                                                  self.a24_graph.num_points() as f64);
+                }
+                self.h_24_a  = Some(h_24_a);
             },
             "L_MOTOR_TEMP" => {
                 let point_x = self.motor_temp_graph.num_points() as f64;
@@ -719,15 +746,6 @@ impl TelemetryUi {
             "W_WND_SPD" => {
                 let wind_speed = packet_parts[1].parse().unwrap();
                 self.wind_speed = Some(wind_speed);
-            },
-            //Casey adding L+R motor currents
-            "L_MOTOR_CURRENT" => {
-                let left_motor_current = packet_parts[1].parse().unwrap();
-                self.left_motor_current  = Some(left_motor_current);
-            },
-            "R_MOTOR_CURRENT" => {
-                let right_motor_current = packet_parts[1].parse().unwrap();
-                self.right_motor_current  = Some(right_motor_current);
             },
             "IMU" => {
                 let ax: f64 = packet_parts[1].parse().unwrap();
