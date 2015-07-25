@@ -128,9 +128,11 @@ fn main() {
                 if controller.get_button(controller::Button::A) {
                     nav_ui.sadl = -100.0;
                     nav_ui.send_sadl();
-                }
-                if controller.get_button(controller::Button::Y) {
+                } else if controller.get_button(controller::Button::Y) {
                     nav_ui.sadl = 100.0;
+                    nav_ui.send_sadl();
+                } else {
+                    nav_ui.sadl = 0.0;
                     nav_ui.send_sadl();
                 }
                 
