@@ -1,4 +1,6 @@
+#![feature(iter_arith)]
 #![feature(convert)]
+
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -27,6 +29,7 @@ use sdl2_window::Sdl2Window;
 
 use tele_ui::TelemetryUi;
 
+pub mod avg_val;
 pub mod line_graph;
 pub mod tele_ui;
 

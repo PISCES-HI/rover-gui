@@ -290,7 +290,7 @@ impl NavigationUi {
         
         TextBox::new(&mut self.command)
             .font_size(16)
-            .dimensions(320.0, 40.0)
+            .dimensions(320.0, 20.0)
             .frame(1.0)
             .frame_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
