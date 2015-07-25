@@ -595,7 +595,7 @@ impl TelemetryUi {
             .color(self.bg_color.plain_contrast())
             .set(IMU_LABEL, ui);
 
-        let (pitch, roll, heading, color) =
+        let (pitch, roll, heading, imu_color) =
             match self.pitch_roll_heading {
                 Some((pitch, roll, heading)) => (format!("{0:.1}", pitch),
                                                  format!("{0:.1}", roll),
@@ -616,7 +616,7 @@ impl TelemetryUi {
         Label::new(pitch.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 530.0)
             .font_size(16)
-            .color(l_motor_temp_color)
+            .color(imu_color)
             .set(IMU_PITCH_VALUE, ui);
 
         // IMU roll
@@ -630,7 +630,7 @@ impl TelemetryUi {
         Label::new(roll.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 550.0)
             .font_size(16)
-            .color(r_motor_temp_color)
+            .color(imu_color)
             .set(IMU_ROLL_VALUE, ui);
 
         // IMU heading
@@ -644,7 +644,7 @@ impl TelemetryUi {
         Label::new(heading.as_str())
             .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 570.0)
             .font_size(16)
-            .color(r_motor_temp_color)
+            .color(imu_color)
             .set(IMU_HEADING_VALUE, ui);
 
         // Trend graph labels

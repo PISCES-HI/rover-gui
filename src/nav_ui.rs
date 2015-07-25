@@ -34,6 +34,9 @@ pub struct NavigationUi {
     bg_color: Color,
     
     mission_time: MissionTime,
+
+    // IMU
+    pitch_roll_heading: Option<(f64, f64, f64)>,
     
     // RPM stuff
     pub l_rpm: f32,
@@ -60,6 +63,8 @@ impl NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
             
             mission_time: MissionTime::Paused(time::Duration::zero()),
+
+            pitch_roll_heading: None,
             
             l_rpm: 0.0,
             r_rpm: 0.0,
@@ -166,14 +171,70 @@ impl NavigationUi {
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
         
-        // IMU label
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // IMU section
+
         Label::new("IMU")
             .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 190.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(IMU_LABEL, ui);
+
+        let (pitch, roll, heading, imu_color) =
+            match self.pitch_roll_heading {
+                Some((pitch, roll, heading)) => (format!("{0:.1}", pitch),
+                                                 format!("{0:.1}", roll),
+                                                 format!("{0:.1}", heading),
+                                                 rgb(0.0, 1.0, 0.0)),
+                None => ("NO DATA".to_string(), "NO DATA".to_string(),
+                         "NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+
+        // IMU pitch
+
+        Label::new(format!("Pitch").as_str())
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_PITCH_LABEL, ui);
+
+        Label::new(pitch.as_str())
+            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(imu_color)
+            .set(IMU_PITCH_VALUE, ui);
+
+        // IMU roll
+
+        Label::new(format!("Roll").as_str())
+            .xy((-ui.win_w / 2.0) + 190.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_ROLL_LABEL, ui);
+
+        Label::new(roll.as_str())
+            .xy((-ui.win_w / 2.0) + 270.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(imu_color)
+            .set(IMU_ROLL_VALUE, ui);
+
+        // IMU heading
+
+        Label::new("Heading")
+            .xy((-ui.win_w / 2.0) + 340.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(IMU_HEADING_LABEL, ui);
+
+        Label::new(heading.as_str())
+            .xy((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(imu_color)
+            .set(IMU_HEADING_VALUE, ui);
         
-        // GPS label
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // GPS section
+
         Label::new("GPS")
             .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 400.0)
             .font_size(22)
@@ -291,11 +352,21 @@ impl NavigationUi {
         TextBox::new(&mut self.command)
             .font_size(16)
             .dimensions(320.0, 20.0)
+            .xy(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
             .frame(1.0)
             .frame_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
             .react(|_string: &mut String|{})
             .set(COMMAND_INPUT, ui);
+
+        Button::new()
+            .dimensions(100.0, 30.0)
+            .xy(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Send")
+            .react(|| { self.send_command(); })
+            .set(SEND_COMMAND_BUTTON, ui);
         
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
@@ -347,6 +418,22 @@ impl NavigationUi {
             },
             "GPS" => {
                 println!("{}", packet);
+            },
+            "IMU" => {
+                let ax: f64 = packet_parts[1].parse().unwrap();
+                let ay: f64 = packet_parts[2].parse().unwrap();
+                let az: f64 = packet_parts[3].parse().unwrap();
+
+                let mx: f64 = packet_parts[7].parse().unwrap();
+                let my: f64 = packet_parts[8].parse().unwrap();
+                let mz: f64 = packet_parts[9].parse().unwrap();
+
+                let roll = f64::atan2(ay, az);
+                let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
+                let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
+                                         mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+
+                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading.to_degrees()));
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
@@ -433,6 +520,11 @@ impl NavigationUi {
         let packet = format!("E{}", self.sadl as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
     }
+
+    pub fn send_command(&self) -> io::Result<usize> {
+        let packet = format!("Z{}", self.command);
+        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+    }
 }
 
 // Widget IDs
@@ -442,8 +534,21 @@ const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
 const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
 const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
 const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
+
+// IMU section
 const IMU_LABEL: WidgetId = TIME_DELAY + 1;
-const GPS_LABEL: WidgetId = IMU_LABEL + 1;
+
+const IMU_PITCH_LABEL: WidgetId = IMU_LABEL + 1;
+const IMU_PITCH_VALUE: WidgetId = IMU_PITCH_LABEL + 1;
+
+const IMU_ROLL_LABEL: WidgetId = IMU_PITCH_VALUE + 1;
+const IMU_ROLL_VALUE: WidgetId = IMU_ROLL_LABEL + 1;
+
+const IMU_HEADING_LABEL: WidgetId = IMU_ROLL_VALUE + 1;
+const IMU_HEADING_VALUE: WidgetId = IMU_HEADING_LABEL + 1;
+
+// GPS section
+const GPS_LABEL: WidgetId = IMU_HEADING_VALUE + 1;
 const LONGITUDE_LABEL: WidgetId = GPS_LABEL + 1;
 const LATITUDE_LABEL: WidgetId = LONGITUDE_LABEL + 1;
 const VELOCITY_LABEL: WidgetId = LATITUDE_LABEL + 1;
@@ -455,6 +560,7 @@ const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
 const COMMAND_LABEL: WidgetId = SADL_SLIDER + 1;
 const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
+const SEND_COMMAND_BUTTON: WidgetId = COMMAND_INPUT + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
