@@ -433,7 +433,12 @@ impl NavigationUi {
                 let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
                                          mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
 
-                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading.to_degrees()));
+                let mut heading = heading.to_degrees();
+                if heading < 0.0 {
+                    heading += 360.0;
+                }
+                heading = 360.0 - heading;
+                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
             },
             _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
         }
