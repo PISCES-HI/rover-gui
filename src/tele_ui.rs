@@ -81,10 +81,13 @@ pub struct TelemetryUi {
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0));
-        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0));
-        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0));
-        let motor_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 100.0));
+        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0), vec![rgb(1.0, 0.0, 0.0)]);
+        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0), vec![rgb(1.0, 0.0, 0.0)]);
+        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0), vec![rgb(1.0, 0.0, 0.0)]);
+        let motor_temp_graph = LineGraph::new((400.0, 150.0),
+                                              (0.0, 100.0),
+                                              (0.0, 100.0),
+                                              vec![rgb(1.0, 0.0, 0.0), rgb(0.0, 0.0, 1.0)]);
 
         TelemetryUi {
             socket: socket,
@@ -692,11 +695,11 @@ impl TelemetryUi {
                 self.h_48_v.add_value(packet_parts[1].parse().unwrap());
                 let h_48_v = self.h_48_v.get().unwrap();
 
-                let point_x = self.v48_graph.num_points() as f64;
-                self.v48_graph.add_point(point_x, h_48_v);
-                if self.v48_graph.num_points() > 100 {
-                    self.v48_graph.x_interval = ((self.v48_graph.num_points() - 100) as f64,
-                                                  self.v48_graph.num_points() as f64);
+                let point_x = self.v48_graph.num_points(0) as f64;
+                self.v48_graph.add_point(0, point_x, h_48_v);
+                if self.v48_graph.num_points(0) > 100 {
+                    self.v48_graph.x_interval = ((self.v48_graph.num_points(0) - 100) as f64,
+                                                  self.v48_graph.num_points(0) as f64);
                 }
 
                 /////////////////////
@@ -706,11 +709,11 @@ impl TelemetryUi {
                 self.p_12_e_v.add_value(packet_parts[3].parse().unwrap());
                 let p_12_e_v = self.p_12_e_v.get().unwrap();
 
-                let point_x = self.v12_graph.num_points() as f64;
-                self.v12_graph.add_point(point_x, p_12_e_v);
-                if self.v12_graph.num_points() > 100 {
-                    self.v12_graph.x_interval = ((self.v12_graph.num_points() - 100) as f64,
-                                                  self.v12_graph.num_points() as f64);
+                let point_x = self.v12_graph.num_points(0) as f64;
+                self.v12_graph.add_point(0, point_x, p_12_e_v);
+                if self.v12_graph.num_points(0) > 100 {
+                    self.v12_graph.x_interval = ((self.v12_graph.num_points(0) - 100) as f64,
+                                                  self.v12_graph.num_points(0) as f64);
                 }
 
                 /////////////////////
@@ -725,34 +728,34 @@ impl TelemetryUi {
                 self.h_24_a.add_value(packet_parts[4].parse().unwrap());
                 let h_24_a = self.p_12_e_v.get().unwrap();
 
-                let point_x = self.a24_graph.num_points() as f64;
-                self.a24_graph.add_point(point_x, h_24_a);
-                if self.a24_graph.num_points() > 100 {
-                    self.a24_graph.x_interval = ((self.a24_graph.num_points() - 100) as f64,
-                                                  self.a24_graph.num_points() as f64);
+                let point_x = self.a24_graph.num_points(0) as f64;
+                self.a24_graph.add_point(0, point_x, h_24_a);
+                if self.a24_graph.num_points(0) > 100 {
+                    self.a24_graph.x_interval = ((self.a24_graph.num_points(0) - 100) as f64,
+                                                  self.a24_graph.num_points(0) as f64);
                 }
             },
             "L_MOTOR_TEMP" => {
                 self.l_motor_temp.add_value(packet_parts[1].parse().unwrap());
                 let l_motor_temp = self.l_motor_temp.get().unwrap();
 
-                let point_x = self.motor_temp_graph.num_points() as f64;
-                self.motor_temp_graph.add_point(point_x, l_motor_temp);
-                if self.motor_temp_graph.num_points() > 100 {
-                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points() - 100) as f64,
-                                                      self.motor_temp_graph.num_points() as f64);
+                let point_x = self.motor_temp_graph.num_points(0) as f64;
+                self.motor_temp_graph.add_point(0, point_x, l_motor_temp);
+                if self.motor_temp_graph.num_points(0) > 100 {
+                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(0) - 100) as f64,
+                                                      self.motor_temp_graph.num_points(0) as f64);
                 }
             },
             "R_MOTOR_TEMP" => {
                 self.r_motor_temp.add_value(packet_parts[1].parse().unwrap());
                 let r_motor_temp = self.r_motor_temp.get().unwrap();
 
-                //let point_x = self.motor_temp_graph.num_points() as f64;
-                /*self.motor_temp_graph.add_point(point_x, l_motor_temp);
-                if self.motor_temp_graph.num_points() > 100 {
-                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points() - 100) as f64,
-                                                      self.motor_temp_graph.num_points() as f64);
-                }*/
+                let point_x = self.motor_temp_graph.num_points(1) as f64;
+                self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
+                if self.motor_temp_graph.num_points(1) > 100 {
+                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(1) - 100) as f64,
+                                                      self.motor_temp_graph.num_points(1) as f64);
+                }
             },
             "UPR_A_TEMP" => {
                 self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap());
