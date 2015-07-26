@@ -575,32 +575,32 @@ impl NavigationUi {
     
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
     
     pub fn send_r_rpm(&self) -> io::Result<usize> {
         let packet = format!("B{}", self.r_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
     
     pub fn send_f_pan(&self) -> io::Result<usize> {
         let packet = format!("C{}", self.f_pan as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
     
     pub fn send_f_tilt(&self) -> io::Result<usize> {
         let packet = format!("D{}", self.f_tilt as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
 
     pub fn send_sadl(&self) -> io::Result<usize> {
         let packet = format!("E{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
 
     pub fn send_command(&self) -> io::Result<usize> {
         let packet = format!("Z{}", self.command);
-        self.socket.send_to(packet.as_bytes(), ("10.10.153.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
     }
 }
 
