@@ -485,6 +485,26 @@ impl NavigationUi {
                 self.sadl = -100.0;
                 self.send_sadl();
             },
+            Up => {
+                // Camera up
+                self.f_tilt += f32::min(5.0, 180.0 - self.f_tilt);
+                self.send_f_tilt();
+            },
+            Down => {
+                // Camera down
+                self.f_tilt -= f32::min(5.0, self.f_tilt - 90.0);
+                self.send_f_tilt();
+            },
+            Left => {
+                // Camera up
+                self.f_pan -= f32::min(5.0, self.f_pan - 0.0);
+                self.send_f_pan();
+            },
+            Right => {
+                // Camera down
+                self.f_pan += f32::min(5.0, 180.0 - self.f_pan);
+                self.send_f_pan();
+            },
             _ => { },
         }
     }

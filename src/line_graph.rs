@@ -1,15 +1,14 @@
-use conrod::Color;
 use graphics::Context;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 struct Line {
-    color: Color,
+    color: [f32; 4],
     points: Vec<(f64, f64)>,
 }
 
 impl Line {
-    fn new(color: Color, points: Vec<(f64, f64)>) -> Line {
+    fn new(color: [f32; 4], points: Vec<(f64, f64)>) -> Line {
         Line {
             color: color,
             points: points,
@@ -25,7 +24,7 @@ pub struct LineGraph {
 }
 
 impl LineGraph {
-    pub fn new(size: (f64, f64), x_interval: (f64, f64), y_interval: (f64, f64), line_colors: Vec<Color>) -> LineGraph {
+    pub fn new(size: (f64, f64), x_interval: (f64, f64), y_interval: (f64, f64), line_colors: Vec<[f32; 4]>) -> LineGraph {
         LineGraph {
             lines: line_colors.into_iter().map(|c| Line::new(c, Vec::new())).collect(),
             size: size,
@@ -71,7 +70,7 @@ impl LineGraph {
                 let last_y_norm = (last_y - self.y_interval.0)/(self.y_interval.1 - self.y_interval.0);
                 
                 if last_x >= self.x_interval.0 && x <= self.x_interval.1 {
-                    Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
+                    Line::new(line.color, 1.0)
                         .draw([last_x_norm * self.size.0, self.size.1 - last_y_norm*self.size.1,
                                x_norm * self.size.0, self.size.1 - y_norm*self.size.1],
                               &c.draw_state, c.transform,

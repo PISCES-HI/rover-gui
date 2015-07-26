@@ -81,13 +81,13 @@ pub struct TelemetryUi {
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0), vec![rgb(1.0, 0.0, 0.0)]);
-        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0), vec![rgb(1.0, 0.0, 0.0)]);
-        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0), vec![rgb(1.0, 0.0, 0.0)]);
+        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let motor_temp_graph = LineGraph::new((400.0, 150.0),
                                               (0.0, 100.0),
                                               (0.0, 100.0),
-                                              vec![rgb(1.0, 0.0, 0.0), rgb(0.0, 0.0, 1.0)]);
+                                              vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]);
 
         TelemetryUi {
             socket: socket,
