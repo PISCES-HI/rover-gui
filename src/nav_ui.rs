@@ -445,13 +445,65 @@ impl NavigationUi {
     }
     
     pub fn on_key_pressed(&mut self, key: input::Key) {
+        use piston::input::Key::*;
         match key {
+            W => {
+                // Forward
+                self.l_rpm = 100.0;
+                self.r_rpm = 100.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            },
+            S => {
+                // Forward
+                self.l_rpm = -100.0;
+                self.r_rpm = -100.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            },
+            A => {
+                // Forward
+                self.l_rpm = -100.0;
+                self.r_rpm = 100.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            },
+            D => {
+                // Forward
+                self.l_rpm = 100.0;
+                self.r_rpm = -100.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            },
+            R => {
+                // SADL up
+                self.sadl = 100.0;
+                self.send_sadl();
+            },
+            F => {
+                // SADL up
+                self.sadl = -100.0;
+                self.send_sadl();
+            },
             _ => { },
         }
     }
     
     pub fn on_key_released(&mut self, key: input::Key) {
+        use piston::input::Key::*;
         match key {
+            W | S | A | D => {
+                // LR motor stop
+                self.l_rpm = 0.0;
+                self.r_rpm = 0.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            },
+            R | F => {
+                // SADL stop
+                self.sadl = 0.0;
+                self.send_sadl();
+            },
             _ => { },
         }
     }
