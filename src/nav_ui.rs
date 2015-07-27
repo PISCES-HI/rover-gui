@@ -685,7 +685,7 @@ impl NavigationUi {
         let time_since = (time::now() - self.last_sadl_time).num_milliseconds();
         if time_since >= 500 {
             self.last_sadl_time = time::now();
-            let packet = format!("D{}", self.sadl as i32);
+            let packet = format!("E{}", self.sadl as i32);
             self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
         } else {
             Ok(0)
