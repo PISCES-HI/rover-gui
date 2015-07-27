@@ -257,7 +257,7 @@ impl BladeUi {
     
     pub fn send_blade(&self) -> io::Result<usize> {
         let packet = format!("F{}", self.blade as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
 }
 

@@ -37,6 +37,13 @@ pub struct NavigationUi {
 
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
+
+    // GPS
+    latitude: Option<f64>,
+    longitude: Option<f64>,
+    speed: Option<f64>,
+    altitude: Option<f64>,
+    angle: Option<f64>,
     
     // RPM stuff
     pub l_rpm: f32,
@@ -65,6 +72,12 @@ impl NavigationUi {
             mission_time: MissionTime::Paused(time::Duration::zero()),
 
             pitch_roll_heading: None,
+
+            latitude: None,
+            longitude: None,
+            speed: None,
+            altitude: None,
+            angle: None,
             
             l_rpm: 0.0,
             r_rpm: 0.0,
@@ -241,26 +254,77 @@ impl NavigationUi {
             .color(self.bg_color.plain_contrast())
             .set(GPS_LABEL, ui);
         
-        // Longitude label
-        Label::new("19 43' 1\" N")
+        // Latitude label
+        let (latitude, latitude_color) =
+            match self.latitude {
+                Some(lat) => {
+                    (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(latitude.as_str())
             .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 425.0)
             .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(LONGITUDE_LABEL, ui);
-        
-        // Latitude label
-        Label::new("155 4' 1\" W")
+            .color(latitude_color)
+            .set(LATITUDE_LABEL, ui);
+
+        // Longitude label
+        let (longitude, longitude_color) =
+            match self.longitude {
+                Some(lng) => {
+                    (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(longitude.as_str())
             .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 445.0)
             .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(LATITUDE_LABEL, ui);
+            .color(longitude_color)
+            .set(LONGITUDE_LABEL, ui);
         
-        // Longitude label
-        Label::new("0.5 m/s")
+        // Speed label
+        let (speed, speed_color) =
+            match self.speed {
+                Some(speed) => {
+                    (format!("{0:.2} m/s", speed), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(speed.as_str())
             .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 465.0)
             .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(VELOCITY_LABEL, ui);
+            .color(speed_color)
+            .set(SPEED_LABEL, ui);
+
+        // Altitude label
+        let (altitude, altitude_color) =
+            match self.altitude {
+                Some(alt) => {
+                    (format!("{0:.2} m", alt), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(altitude.as_str())
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 485.0)
+            .font_size(16)
+            .color(altitude_color)
+            .set(ALTITUDE_LABEL, ui);
+
+        // Angle label
+        let (angle, angle_color) =
+            match self.angle {
+                Some(angle) => {
+                    (format!("{0:.2} deg", angle), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(angle.as_str())
+            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 505.0)
+            .font_size(16)
+            .color(angle_color)
+            .set(ANGLE_LABEL, ui);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
 
         // Left RPM slider
         Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
@@ -417,7 +481,11 @@ impl NavigationUi {
                 self.r_rpm_status = packet_parts[2].clone();
             },
             "GPS" => {
-                println!("{}", packet);
+                self.latitude = Some(packet_parts[1].parse().unwrap());
+                self.longitude = Some(packet_parts[2].parse().unwrap());
+                self.speed = Some(packet_parts[3].parse().unwrap());
+                self.altitude = Some(packet_parts[4].parse().unwrap());
+                self.angle = Some(packet_parts[5].parse().unwrap());
             },
             "IMU" => {
                 let ax: f64 = packet_parts[1].parse().unwrap();
@@ -575,32 +643,32 @@ impl NavigationUi {
     
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
     
     pub fn send_r_rpm(&self) -> io::Result<usize> {
         let packet = format!("B{}", self.r_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
     
     pub fn send_f_pan(&self) -> io::Result<usize> {
         let packet = format!("C{}", self.f_pan as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
     
     pub fn send_f_tilt(&self) -> io::Result<usize> {
         let packet = format!("D{}", self.f_tilt as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
 
     pub fn send_sadl(&self) -> io::Result<usize> {
         let packet = format!("E{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
 
     pub fn send_command(&self) -> io::Result<usize> {
         let packet = format!("Z{}", self.command);
-        self.socket.send_to(packet.as_bytes(), ("10.14.120.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
 }
 
@@ -626,10 +694,13 @@ const IMU_HEADING_VALUE: WidgetId = IMU_HEADING_LABEL + 1;
 
 // GPS section
 const GPS_LABEL: WidgetId = IMU_HEADING_VALUE + 1;
-const LONGITUDE_LABEL: WidgetId = GPS_LABEL + 1;
-const LATITUDE_LABEL: WidgetId = LONGITUDE_LABEL + 1;
-const VELOCITY_LABEL: WidgetId = LATITUDE_LABEL + 1;
-const L_RPM_SLIDER: WidgetId = VELOCITY_LABEL + 1;
+const LATITUDE_LABEL: WidgetId = GPS_LABEL + 1;
+const LONGITUDE_LABEL: WidgetId = LATITUDE_LABEL + 1;
+const SPEED_LABEL: WidgetId = LONGITUDE_LABEL + 1;
+const ALTITUDE_LABEL: WidgetId = SPEED_LABEL + 1;
+const ANGLE_LABEL: WidgetId = ALTITUDE_LABEL + 1;
+
+const L_RPM_SLIDER: WidgetId = ANGLE_LABEL + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
