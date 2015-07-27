@@ -81,7 +81,7 @@ fn main() {
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
     nav_ui.send_f_tilt();
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////
     
     let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.156.26/axis-media/media.amp", None);
@@ -126,14 +126,11 @@ fn main() {
 
                 // Control SADL with A/Y buttons
                 if controller.get_button(controller::Button::A) {
-                    nav_ui.sadl = -100.0;
-                    nav_ui.send_sadl();
+                    nav_ui.try_update_sadl(100.0);
                 } else if controller.get_button(controller::Button::Y) {
-                    nav_ui.sadl = 100.0;
-                    nav_ui.send_sadl();
+                    nav_ui.try_update_sadl(-100.0);
                 } else {
-                    nav_ui.sadl = 0.0;
-                    nav_ui.send_sadl();
+                    nav_ui.try_update_sadl(0.0);
                 }
                 
                 // Control pan with left/right arrow keys

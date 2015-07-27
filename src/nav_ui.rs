@@ -53,11 +53,15 @@ pub struct NavigationUi {
     r_rpm_status: String,
 
     pub sadl: f32,
+    pub last_sadl_time: time::Tm,
+
     pub blade: f32,
     
     // Forward camera controls
     pub f_pan: f32,
+    pub last_f_pan_time: time::Tm,
     pub f_tilt: f32,
+    pub last_f_tilt_time: time::Tm,
 
     pub command: String,
     
@@ -86,10 +90,14 @@ impl NavigationUi {
             r_rpm_status: "UNAVAILABLE".to_string(),
 
             sadl: 0.0,
+            last_sadl_time: time::now(),
+            
             blade: 0.0,
             
             f_pan: 90.0,
+            last_f_pan_time: time::now(),
             f_tilt: 130.0,
+            last_f_tilt_time: time::now(),
 
             command: "".to_string(),
             
@@ -651,19 +659,37 @@ impl NavigationUi {
         self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
     
-    pub fn send_f_pan(&self) -> io::Result<usize> {
-        let packet = format!("C{}", self.f_pan as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+    pub fn send_f_pan(&mut self) -> io::Result<usize> {
+        let time_since = (time::now() - self.last_f_pan_time).num_milliseconds();
+        if time_since >= 500 {
+            self.last_f_pan_time = time::now();
+            let packet = format!("C{}", self.f_pan as i32);
+            self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        } else {
+            Ok(0)
+        }
     }
     
-    pub fn send_f_tilt(&self) -> io::Result<usize> {
-        let packet = format!("D{}", self.f_tilt as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+    pub fn send_f_tilt(&mut self) -> io::Result<usize> {
+        let time_since = (time::now() - self.last_f_tilt_time).num_milliseconds();
+        if time_since >= 500 {
+            self.last_f_tilt_time = time::now();
+            let packet = format!("D{}", self.f_tilt as i32);
+            self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        } else {
+            Ok(0)
+        }
     }
 
-    pub fn send_sadl(&self) -> io::Result<usize> {
-        let packet = format!("E{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+    pub fn send_sadl(&mut self) -> io::Result<usize> {
+        let time_since = (time::now() - self.last_sadl_time).num_milliseconds();
+        if time_since >= 500 {
+            self.last_sadl_time = time::now();
+            let packet = format!("D{}", self.sadl as i32);
+            self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        } else {
+            Ok(0)
+        }
     }
 
     pub fn send_command(&self) -> io::Result<usize> {
