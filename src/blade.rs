@@ -80,7 +80,7 @@ fn main() {
     
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let (mut video_texture, video_image) = start_video_stream("rtsp://root:pisces@10.10.156.28/axis-media/media.amp");
+    let (mut video_texture, video_image) = start_video_stream("rtsp://root:pisces@10.10.156.28/axis-media/media.amp", None);
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,11 +108,17 @@ fn main() {
             }
             
             if let Some(ref controller) = controller {
-                // Control RPM with analog sticks
-                let left_y = controller.get_axis(controller::Axis::LeftY);
-                let blade = -(left_y as f32 / 32768.0) * 100.0;
-
-                blade_ui.try_update_blade(blade);
+                // Control tilt with up/down arrow keys
+                if controller.get_button(controller::Button::DPadDown) {
+                    blade_ui.blade = 100.0;
+                    blade_ui.send_blade();
+                } else if controller.get_button(controller::Button::DPadUp) {
+                    blade_ui.blade = -100.0;
+                    blade_ui.send_blade();
+                } else {
+                    blade_ui.blade = 0.0;
+                    blade_ui.send_blade();
+                }
             }
             
             let video_image = video_image.lock().unwrap();
