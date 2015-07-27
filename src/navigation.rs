@@ -84,7 +84,7 @@ fn main() {
     
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.156.26/axis-media/media.amp", Some("mission_data/sit_cam"));
+    let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.156.26/axis-media/media.amp", None);
     let (mut video1_texture, video1_image) = start_video_stream("rtsp://10.10.156.27/axis-media/media.amp", None);
     let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.156.28/axis-media/media.amp", None);
     
