@@ -644,7 +644,7 @@ impl NavigationUi {
     }
 
     pub fn try_update_sadl(&mut self, sadl: f32) -> io::Result<usize> {
-        if (sadl - self.sadl).abs() > 5.0 || sadl == 0.0 || sadl == 100.0 {
+        if sadl != self.sadl && ((sadl - self.sadl).abs() > 5.0 || sadl == 0.0 || sadl == 100.0) {
             self.sadl = sadl;
             self.send_sadl()
         } else {

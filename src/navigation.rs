@@ -1,4 +1,6 @@
 #![feature(convert)]
+
+use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
