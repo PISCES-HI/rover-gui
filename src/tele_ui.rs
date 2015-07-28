@@ -32,6 +32,36 @@ enum MissionTime {
     Running(time::Tm, time::Duration),
 }
 
+pub enum RygLimit {
+    LessThan(f64, f64),
+    GreaterThan(f64, f64),
+}
+
+impl RygLimit {
+    pub fn get_color(&self, value: f64) -> Color {
+        match *self {
+            RygLimit::LessThan(r, y) => {
+                if value < r {
+                    rgb(1.0, 0.0, 0.0)
+                } else if value < y {
+                    rgb(1.0, 1.0, 0.0)
+                } else {
+                    rgb(0.0, 1.0, 0.0)
+                }
+            },
+            RygLimit::GreaterThan(r, y) => {
+                if value > r {
+                    rgb(1.0, 0.0, 0.0)
+                } else if value > y {
+                    rgb(1.0, 1.0, 0.0)
+                } else {
+                    rgb(0.0, 1.0, 0.0)
+                }
+            },
+        }
+    }
+}
+
 pub struct TelemetryUi {
     socket: UdpSocket,
 
@@ -46,16 +76,20 @@ pub struct TelemetryUi {
     // Voltage stuff
     v48_graph: LineGraph,
     h_48_v: AvgVal,
+    h_48_v_limits: RygLimit,
 
     a24_graph: LineGraph,
     h_24_v: AvgVal,
     h_24_a: AvgVal,
+    h_24_v_limits: RygLimit,
 
     v12_graph: LineGraph,
     p_12_e_v: AvgVal,
     p_12_e_a: AvgVal,
+    p_12_e_v_limits: RygLimit,
 
     p_12_pl_v: AvgVal,
+    p_12_pl_v_limits: RygLimit,
 
     l_motor_amp: AvgVal,
     r_motor_amp: AvgVal,
@@ -64,10 +98,14 @@ pub struct TelemetryUi {
     motor_temp_graph: LineGraph,
     l_motor_temp: AvgVal,
     r_motor_temp: AvgVal,
+    l_motor_temp_limits: RygLimit,
+    r_motor_temp_limits: RygLimit,
 
     // Avionics box temp
     upper_avionics_temp: AvgVal,
     lower_avionics_temp: AvgVal,
+    upper_avionics_temp_limits: RygLimit,
+    lower_avionics_temp_limits: RygLimit,
 
     // Weather section
     wind_speed: AvgVal,
@@ -101,16 +139,20 @@ impl TelemetryUi {
 
             v48_graph: v48_graph,
             h_48_v: AvgVal::new(60),
+            h_48_v_limits: RygLimit::LessThan(45.0, 48.0),
 
             a24_graph: a24_graph,
             h_24_v: AvgVal::new(60),
             h_24_a: AvgVal::new(30),
+            h_24_v_limits: RygLimit::LessThan(20.0, 22.0),
 
             v12_graph: v12_graph,
             p_12_e_v: AvgVal::new(60),
             p_12_e_a: AvgVal::new(30),
+            p_12_e_v_limits: RygLimit::LessThan(10.0, 12.0),
 
             p_12_pl_v: AvgVal::new(60),
+            p_12_pl_v_limits: RygLimit::LessThan(10.0, 12.0),
 
             l_motor_amp: AvgVal::new(30),
             r_motor_amp: AvgVal::new(30),
@@ -118,9 +160,13 @@ impl TelemetryUi {
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: AvgVal::new(40),
             r_motor_temp: AvgVal::new(40),
+            l_motor_temp_limits: RygLimit::LessThan(90.0, 70.0),
+            r_motor_temp_limits: RygLimit::LessThan(90.0, 70.0),
 
             upper_avionics_temp: AvgVal::new(60),
             lower_avionics_temp: AvgVal::new(60),
+            upper_avionics_temp_limits: RygLimit::LessThan(60.0, 45.0),
+            lower_avionics_temp_limits: RygLimit::LessThan(60.0, 45.0),
 
             wind_speed: AvgVal::new(20),
             pressure: None,
@@ -238,7 +284,7 @@ impl TelemetryUi {
         let (h_48_v, h_48_v_color) =
             match self.h_48_v.get() {
                 Some(v) => {
-                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2}V", v), self.h_48_v_limits.get_color(v))
                 },
                 None => {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
@@ -267,7 +313,7 @@ impl TelemetryUi {
         let (h_24_v, h_24_v_color) =
             match self.h_24_v.get() {
                 Some(v) => {
-                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2}V", v), self.h_24_v_limits.get_color(v))
                 },
                 None => {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
@@ -305,7 +351,7 @@ impl TelemetryUi {
         let (p_12_e_v, p_12_e_v_color) =
             match self.p_12_e_v.get() {
                 Some(v) => {
-                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2}V", v), self.p_12_e_v_limits.get_color(v))
                 },
                 None => {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
@@ -343,7 +389,7 @@ impl TelemetryUi {
         let (p_12_pl_v, p_12_pl_v_color) =
             match self.p_12_pl_v.get() {
                 Some(v) => {
-                    (format!("{0:.2}V", v), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2}V", v), self.p_12_pl_v_limits.get_color(v))
                 },
                 None => {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
@@ -423,7 +469,7 @@ impl TelemetryUi {
         let (l_motor_temp, l_motor_temp_color) =
             match self.l_motor_temp.get() {
                 Some(temp) => {
-                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2} C", temp), self.l_motor_temp_limits.get_color(temp))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
@@ -444,7 +490,7 @@ impl TelemetryUi {
         let (r_motor_temp, r_motor_temp_color) =
             match self.r_motor_temp.get() {
                 Some(temp) => {
-                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2} C", temp), self.r_motor_temp_limits.get_color(temp))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
@@ -465,7 +511,7 @@ impl TelemetryUi {
         let (upper_avionics_temp, upper_avionics_temp_color) =
             match self.upper_avionics_temp.get() {
                 Some(temp) => {
-                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2} C", temp), self.upper_avionics_temp_limits.get_color(temp))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
@@ -486,7 +532,7 @@ impl TelemetryUi {
         let (lower_avionics_temp, lower_avionics_temp_color) =
             match self.lower_avionics_temp.get() {
                 Some(temp) => {
-                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                    (format!("{0:.2} C", temp), self.lower_avionics_temp_limits.get_color(temp))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
