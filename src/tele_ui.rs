@@ -682,122 +682,125 @@ impl TelemetryUi {
     }
 
     pub fn handle_packet(&mut self, packet: String) {
-        //println!("Got packet: {}", packet);
-        let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
+        let packets = packet.split("|");
+        
+        for packet in packets {
+            let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
 
-        match packet_parts[0].as_str() {
-            "RPM_STATUS" => {
-                self.l_rpm_status = packet_parts[1].clone();
-                self.r_rpm_status = packet_parts[2].clone();
-            },
-            "VOLT" => {
-                /////////////////////
-                self.h_48_v.add_value(packet_parts[1].parse().unwrap());
-                let h_48_v = self.h_48_v.get().unwrap();
+            match packet_parts[0].as_str() {
+                "RPM_STATUS" => {
+                    self.l_rpm_status = packet_parts[1].clone();
+                    self.r_rpm_status = packet_parts[2].clone();
+                },
+                "VOLT" => {
+                    /////////////////////
+                    self.h_48_v.add_value(packet_parts[1].parse().unwrap());
+                    let h_48_v = self.h_48_v.get().unwrap();
 
-                let point_x = self.v48_graph.num_points(0) as f64;
-                self.v48_graph.add_point(0, point_x, h_48_v);
-                if self.v48_graph.num_points(0) > 100 {
-                    self.v48_graph.x_interval = ((self.v48_graph.num_points(0) - 100) as f64,
-                                                  self.v48_graph.num_points(0) as f64);
-                }
+                    let point_x = self.v48_graph.num_points(0) as f64;
+                    self.v48_graph.add_point(0, point_x, h_48_v);
+                    if self.v48_graph.num_points(0) > 100 {
+                        self.v48_graph.x_interval = ((self.v48_graph.num_points(0) - 100) as f64,
+                                                      self.v48_graph.num_points(0) as f64);
+                    }
 
-                /////////////////////
-                self.h_24_v.add_value(packet_parts[2].parse().unwrap());
+                    /////////////////////
+                    self.h_24_v.add_value(packet_parts[2].parse().unwrap());
 
-                /////////////////////
-                self.p_12_e_v.add_value(packet_parts[3].parse().unwrap());
-                let p_12_e_v = self.p_12_e_v.get().unwrap();
+                    /////////////////////
+                    self.p_12_e_v.add_value(packet_parts[3].parse().unwrap());
+                    let p_12_e_v = self.p_12_e_v.get().unwrap();
 
-                let point_x = self.v12_graph.num_points(0) as f64;
-                self.v12_graph.add_point(0, point_x, p_12_e_v);
-                if self.v12_graph.num_points(0) > 100 {
-                    self.v12_graph.x_interval = ((self.v12_graph.num_points(0) - 100) as f64,
-                                                  self.v12_graph.num_points(0) as f64);
-                }
+                    let point_x = self.v12_graph.num_points(0) as f64;
+                    self.v12_graph.add_point(0, point_x, p_12_e_v);
+                    if self.v12_graph.num_points(0) > 100 {
+                        self.v12_graph.x_interval = ((self.v12_graph.num_points(0) - 100) as f64,
+                                                      self.v12_graph.num_points(0) as f64);
+                    }
 
-                /////////////////////
-                self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap());
-            },
-            "AMP" => {
-                self.l_motor_amp.add_value(packet_parts[1].parse().unwrap());
-                self.r_motor_amp.add_value(packet_parts[2].parse().unwrap());
-                self.p_12_e_a.add_value(packet_parts[3].parse().unwrap());
-                
-                // h-24
-                self.h_24_a.add_value(packet_parts[4].parse().unwrap());
-                let h_24_a = self.p_12_e_v.get().unwrap();
+                    /////////////////////
+                    self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap());
+                },
+                "AMP" => {
+                    self.l_motor_amp.add_value(packet_parts[1].parse().unwrap());
+                    self.r_motor_amp.add_value(packet_parts[2].parse().unwrap());
+                    self.p_12_e_a.add_value(packet_parts[3].parse().unwrap());
+                    
+                    // h-24
+                    self.h_24_a.add_value(packet_parts[4].parse().unwrap());
+                    let h_24_a = self.p_12_e_v.get().unwrap();
 
-                let point_x = self.a24_graph.num_points(0) as f64;
-                self.a24_graph.add_point(0, point_x, h_24_a);
-                if self.a24_graph.num_points(0) > 100 {
-                    self.a24_graph.x_interval = ((self.a24_graph.num_points(0) - 100) as f64,
-                                                  self.a24_graph.num_points(0) as f64);
-                }
-            },
-            "L_MOTOR_TEMP" => {
-                self.l_motor_temp.add_value(packet_parts[1].parse().unwrap());
-                let l_motor_temp = self.l_motor_temp.get().unwrap();
+                    let point_x = self.a24_graph.num_points(0) as f64;
+                    self.a24_graph.add_point(0, point_x, h_24_a);
+                    if self.a24_graph.num_points(0) > 100 {
+                        self.a24_graph.x_interval = ((self.a24_graph.num_points(0) - 100) as f64,
+                                                      self.a24_graph.num_points(0) as f64);
+                    }
+                },
+                "L_MOTOR_TEMP" => {
+                    self.l_motor_temp.add_value(packet_parts[1].parse().unwrap());
+                    let l_motor_temp = self.l_motor_temp.get().unwrap();
 
-                let point_x = self.motor_temp_graph.num_points(0) as f64;
-                self.motor_temp_graph.add_point(0, point_x, l_motor_temp);
-                if self.motor_temp_graph.num_points(0) > 100 {
-                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(0) - 100) as f64,
-                                                      self.motor_temp_graph.num_points(0) as f64);
-                }
-            },
-            "R_MOTOR_TEMP" => {
-                self.r_motor_temp.add_value(packet_parts[1].parse().unwrap());
-                let r_motor_temp = self.r_motor_temp.get().unwrap();
+                    let point_x = self.motor_temp_graph.num_points(0) as f64;
+                    self.motor_temp_graph.add_point(0, point_x, l_motor_temp);
+                    if self.motor_temp_graph.num_points(0) > 100 {
+                        self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(0) - 100) as f64,
+                                                          self.motor_temp_graph.num_points(0) as f64);
+                    }
+                },
+                "R_MOTOR_TEMP" => {
+                    self.r_motor_temp.add_value(packet_parts[1].parse().unwrap());
+                    let r_motor_temp = self.r_motor_temp.get().unwrap();
 
-                let point_x = self.motor_temp_graph.num_points(1) as f64;
-                self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
-                if self.motor_temp_graph.num_points(1) > 100 {
-                    self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(1) - 100) as f64,
-                                                      self.motor_temp_graph.num_points(1) as f64);
-                }
-            },
-            "UPR_A_TEMP" => {
-                self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap());
-            },
-            "LWR_A_TEMP" => {
-                self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap());
-            },
-            "W_TEMP" => {
-                let temp = packet_parts[1].parse().unwrap();
-                self.temp = Some(temp);
-            },
-            "W_PR_ALT" => {
-                let pressure = packet_parts[1].parse().unwrap();
-                let altitude= packet_parts[2].parse().unwrap();
-                self.pressure = Some(pressure);
-                self.altitude = Some(altitude);
-            },
-            "W_WND_SPD" => {
-                self.wind_speed.add_value(packet_parts[1].parse().unwrap());
-            },
-            "IMU" => {
-                let ax: f64 = packet_parts[1].parse().unwrap();
-                let ay: f64 = packet_parts[2].parse().unwrap();
-                let az: f64 = packet_parts[3].parse().unwrap();
+                    let point_x = self.motor_temp_graph.num_points(1) as f64;
+                    self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
+                    if self.motor_temp_graph.num_points(1) > 100 {
+                        self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(1) - 100) as f64,
+                                                          self.motor_temp_graph.num_points(1) as f64);
+                    }
+                },
+                "UPR_A_TEMP" => {
+                    self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap());
+                },
+                "LWR_A_TEMP" => {
+                    self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap());
+                },
+                "W_TEMP" => {
+                    let temp = packet_parts[1].parse().unwrap();
+                    self.temp = Some(temp);
+                },
+                "W_PR_ALT" => {
+                    let pressure = packet_parts[1].parse().unwrap();
+                    let altitude= packet_parts[2].parse().unwrap();
+                    self.pressure = Some(pressure);
+                    self.altitude = Some(altitude);
+                },
+                "W_WND_SPD" => {
+                    self.wind_speed.add_value(packet_parts[1].parse().unwrap());
+                },
+                "IMU" => {
+                    let ax: f64 = packet_parts[1].parse().unwrap();
+                    let ay: f64 = packet_parts[2].parse().unwrap();
+                    let az: f64 = packet_parts[3].parse().unwrap();
 
-                let mx: f64 = packet_parts[7].parse().unwrap();
-                let my: f64 = packet_parts[8].parse().unwrap();
-                let mz: f64 = packet_parts[9].parse().unwrap();
+                    let mx: f64 = packet_parts[7].parse().unwrap();
+                    let my: f64 = packet_parts[8].parse().unwrap();
+                    let mz: f64 = packet_parts[9].parse().unwrap();
 
-                let roll = f64::atan2(ay, az);
-                let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
-                let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
-                                         mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+                    let roll = f64::atan2(ay, az);
+                    let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
+                    let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
+                                             mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
 
-                let mut heading = heading.to_degrees();
-                if heading < 0.0 {
-                    heading += 360.0;
-                }
-                heading = 360.0 - heading;
-                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
-            },
-            _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+                    let mut heading = heading.to_degrees();
+                    if heading < 0.0 {
+                        heading += 360.0;
+                    }
+                    heading = 360.0 - heading;
+                    self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                },
+                _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+            }
         }
     }
 

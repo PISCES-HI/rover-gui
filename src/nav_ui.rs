@@ -480,43 +480,46 @@ impl NavigationUi {
     }
     
     pub fn handle_packet(&mut self, packet: String) {
-        //println!("Got packet: {}", packet);
-        let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
-        
-        match packet_parts[0].as_str() {
-            "RPM_STATUS" => {
-                self.l_rpm_status = packet_parts[1].clone();
-                self.r_rpm_status = packet_parts[2].clone();
-            },
-            "GPS" => {
-                self.latitude = Some(packet_parts[1].parse().unwrap());
-                self.longitude = Some(packet_parts[2].parse().unwrap());
-                self.speed = Some(packet_parts[3].parse().unwrap());
-                self.altitude = Some(packet_parts[4].parse().unwrap());
-                self.angle = Some(packet_parts[5].parse().unwrap());
-            },
-            "IMU" => {
-                let ax: f64 = packet_parts[1].parse().unwrap();
-                let ay: f64 = packet_parts[2].parse().unwrap();
-                let az: f64 = packet_parts[3].parse().unwrap();
+        let packets = packet.split("|");
 
-                let mx: f64 = packet_parts[7].parse().unwrap();
-                let my: f64 = packet_parts[8].parse().unwrap();
-                let mz: f64 = packet_parts[9].parse().unwrap();
+        for packet in packets {
+            let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
+            
+            match packet_parts[0].as_str() {
+                "RPM_STATUS" => {
+                    self.l_rpm_status = packet_parts[1].clone();
+                    self.r_rpm_status = packet_parts[2].clone();
+                },
+                "GPS" => {
+                    self.latitude = Some(packet_parts[1].parse().unwrap());
+                    self.longitude = Some(packet_parts[2].parse().unwrap());
+                    self.speed = Some(packet_parts[3].parse().unwrap());
+                    self.altitude = Some(packet_parts[4].parse().unwrap());
+                    self.angle = Some(packet_parts[5].parse().unwrap());
+                },
+                "IMU" => {
+                    let ax: f64 = packet_parts[1].parse().unwrap();
+                    let ay: f64 = packet_parts[2].parse().unwrap();
+                    let az: f64 = packet_parts[3].parse().unwrap();
 
-                let roll = f64::atan2(ay, az);
-                let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
-                let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
-                                         mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+                    let mx: f64 = packet_parts[7].parse().unwrap();
+                    let my: f64 = packet_parts[8].parse().unwrap();
+                    let mz: f64 = packet_parts[9].parse().unwrap();
 
-                let mut heading = heading.to_degrees();
-                if heading < 0.0 {
-                    heading += 360.0;
-                }
-                heading = 360.0 - heading;
-                self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
-            },
-            _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+                    let roll = f64::atan2(ay, az);
+                    let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
+                    let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
+                                             mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+
+                    let mut heading = heading.to_degrees();
+                    if heading < 0.0 {
+                        heading += 360.0;
+                    }
+                    heading = 360.0 - heading;
+                    self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                },
+                _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+            }
         }
     }
     

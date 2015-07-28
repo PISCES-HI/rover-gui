@@ -227,10 +227,14 @@ impl BladeUi {
     }
     
     pub fn handle_packet(&mut self, packet: String) {
-        let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
+        let packets = packet.split("|");
         
-        match packet_parts[0].as_str() {
-            _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+        for packet in packets {
+            let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
+            
+            match packet_parts[0].as_str() {
+                _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+            }
         }
     }
     
