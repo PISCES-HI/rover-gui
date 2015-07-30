@@ -144,7 +144,7 @@ impl TelemetryUi {
             a24_graph: a24_graph,
             h_24_v: AvgVal::new(60),
             h_24_a: AvgVal::new(30),
-            h_24_v_limits: RygLimit::LessThan(20.0, 22.0),
+            h_24_v_limits: RygLimit::LessThan(22.0, 24.0),
 
             v12_graph: v12_graph,
             p_12_e_v: AvgVal::new(60),
@@ -160,13 +160,13 @@ impl TelemetryUi {
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: AvgVal::new(40),
             r_motor_temp: AvgVal::new(40),
-            l_motor_temp_limits: RygLimit::LessThan(90.0, 70.0),
-            r_motor_temp_limits: RygLimit::LessThan(90.0, 70.0),
+            l_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
+            r_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
 
             upper_avionics_temp: AvgVal::new(60),
             lower_avionics_temp: AvgVal::new(60),
-            upper_avionics_temp_limits: RygLimit::LessThan(60.0, 45.0),
-            lower_avionics_temp_limits: RygLimit::LessThan(60.0, 45.0),
+            upper_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
+            lower_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
 
             wind_speed: AvgVal::new(20),
             pressure: None,

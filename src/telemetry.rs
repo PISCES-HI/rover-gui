@@ -61,7 +61,7 @@ fn main() {
     thread::Builder::new()
         .name("packet_in".to_string())
         .spawn(move || {
-            let mut buf = [0u8; 64];
+            let mut buf = [0u8; 512];
             loop {
                 let (bytes_read, _) = in_socket.recv_from(&mut buf).unwrap();
                 if let Ok(msg) = String::from_utf8(buf[0..bytes_read].iter().cloned().collect()) {
