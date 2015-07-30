@@ -81,9 +81,17 @@ impl LineGraph {
     }
     
     pub fn add_point(&mut self, line_index: usize, x: f64, y: f64) {
-        let ref mut points = self.lines[line_index].points;
-        if points.len() == 0 || points[points.len()-1].0 < x {
-            points.push((x, y));
+        {
+            let ref mut points = self.lines[line_index].points;
+            if points.len() == 0 || points[points.len()-1].0 < x {
+                points.push((x, y));
+            }
+        }
+
+        let x_points = (self.x_interval.1 - self.x_interval.0) as usize;
+        if self.num_points(0) > x_points {
+            self.x_interval = ((self.num_points(0) - x_points) as f64,
+                                self.num_points(0) as f64);
         }
     }
     

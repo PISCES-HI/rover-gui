@@ -838,10 +838,6 @@ impl TelemetryUi {
 
                     let point_x = self.v48_graph.num_points(0) as f64;
                     self.v48_graph.add_point(0, point_x, h_48_v);
-                    if self.v48_graph.num_points(0) > 100 {
-                        self.v48_graph.x_interval = ((self.v48_graph.num_points(0) - 100) as f64,
-                                                      self.v48_graph.num_points(0) as f64);
-                    }
 
                     /////////////////////
                     self.h_24_v.add_value(packet_parts[2].parse().unwrap());
@@ -852,10 +848,6 @@ impl TelemetryUi {
 
                     let point_x = self.v12_graph.num_points(0) as f64;
                     self.v12_graph.add_point(0, point_x, p_12_e_v);
-                    if self.v12_graph.num_points(0) > 100 {
-                        self.v12_graph.x_interval = ((self.v12_graph.num_points(0) - 100) as f64,
-                                                      self.v12_graph.num_points(0) as f64);
-                    }
 
                     /////////////////////
                     self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap());
@@ -871,10 +863,6 @@ impl TelemetryUi {
 
                     let point_x = self.a24_graph.num_points(0) as f64;
                     self.a24_graph.add_point(0, point_x, h_24_a);
-                    if self.a24_graph.num_points(0) > 100 {
-                        self.a24_graph.x_interval = ((self.a24_graph.num_points(0) - 100) as f64,
-                                                      self.a24_graph.num_points(0) as f64);
-                    }
                 },
                 "GPS" => {
                     self.latitude = Some(packet_parts[1].parse().unwrap());
@@ -889,10 +877,6 @@ impl TelemetryUi {
 
                     let point_x = self.motor_temp_graph.num_points(0) as f64;
                     self.motor_temp_graph.add_point(0, point_x, l_motor_temp);
-                    if self.motor_temp_graph.num_points(0) > 100 {
-                        self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(0) - 100) as f64,
-                                                          self.motor_temp_graph.num_points(0) as f64);
-                    }
                 },
                 "R_MOTOR_TEMP" => {
                     self.r_motor_temp.add_value(packet_parts[1].parse().unwrap());
@@ -900,10 +884,6 @@ impl TelemetryUi {
 
                     let point_x = self.motor_temp_graph.num_points(1) as f64;
                     self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
-                    if self.motor_temp_graph.num_points(1) > 100 {
-                        self.motor_temp_graph.x_interval = ((self.motor_temp_graph.num_points(1) - 100) as f64,
-                                                          self.motor_temp_graph.num_points(1) as f64);
-                    }
                 },
                 "UPR_A_TEMP" => {
                     self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap());
