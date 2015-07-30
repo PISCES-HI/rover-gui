@@ -64,6 +64,7 @@ pub struct NavigationUi {
     pub last_f_tilt_time: time::Tm,
 
     pub command: String,
+    pub command_mode: bool,
     
     socket: UdpSocket,
 }
@@ -100,6 +101,7 @@ impl NavigationUi {
             last_f_tilt_time: time::now(),
 
             command: "".to_string(),
+            command_mode: false,
             
             socket: socket,
         }
@@ -421,15 +423,18 @@ impl NavigationUi {
             .color(self.bg_color.plain_contrast())
             .set(COMMAND_LABEL, ui);
         
+        let mut should_send_command = false;
         TextBox::new(&mut self.command)
+            .enabled(self.command_mode)
             .font_size(16)
             .dimensions(320.0, 20.0)
             .xy(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
             .frame(1.0)
             .frame_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
-            .react(|_string: &mut String|{})
+            .react(|_string: &mut String| { should_send_command = true; })
             .set(COMMAND_INPUT, ui);
+        if should_send_command { self.send_command(); }
 
         Button::new()
             .dimensions(100.0, 30.0)
@@ -439,6 +444,20 @@ impl NavigationUi {
             .label("Send")
             .react(|| { self.send_command(); })
             .set(SEND_COMMAND_BUTTON, ui);
+
+        let activate_command_label =
+            match self.command_mode {
+                true => "Real-time Mode",
+                false => "Command Mode",
+            };
+        Button::new()
+            .dimensions(150.0, 30.0)
+            .xy(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label(activate_command_label)
+            .react(|| { self.command_mode = !self.command_mode; })
+            .set(ACTIVATE_COMMAND_BUTTON, ui);
         
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
@@ -525,8 +544,13 @@ impl NavigationUi {
         }
     }
     
-    pub fn on_key_pressed(&mut self, key: input::Key) {
+    pub fn on_key_pressed<'a>(&mut self, key: input::Key) {
         use piston::input::Key::*;
+
+        if self.command_mode {
+            return;
+        }
+
         match key {
             W => {
                 // Forward
@@ -590,8 +614,13 @@ impl NavigationUi {
         }
     }
     
-    pub fn on_key_released(&mut self, key: input::Key) {
+    pub fn on_key_released<'a>(&mut self, key: input::Key) {
         use piston::input::Key::*;
+
+        if self.command_mode {
+            return;
+        }
+
         match key {
             W | S | A | D => {
                 // LR motor stop
@@ -686,7 +715,7 @@ impl NavigationUi {
         }
     }
 
-    pub fn send_sadl(&mut self) -> io::Result<usize> {
+    pub fn send_sadl(&self) -> io::Result<usize> {
         let packet = format!("E{}", self.sadl as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
@@ -734,6 +763,7 @@ const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
 const COMMAND_LABEL: WidgetId = SADL_SLIDER + 1;
 const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
 const SEND_COMMAND_BUTTON: WidgetId = COMMAND_INPUT + 1;
+const ACTIVATE_COMMAND_BUTTON: WidgetId = SEND_COMMAND_BUTTON + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;

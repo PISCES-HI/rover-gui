@@ -94,6 +94,13 @@ pub struct TelemetryUi {
     l_motor_amp: AvgVal,
     r_motor_amp: AvgVal,
 
+    // GPS
+    latitude: Option<f64>,
+    longitude: Option<f64>,
+    speed: Option<f64>,
+    gps_altitude: Option<f64>,
+    angle: Option<f64>,
+
     // Motor temp
     motor_temp_graph: LineGraph,
     l_motor_temp: AvgVal,
@@ -119,11 +126,11 @@ pub struct TelemetryUi {
 
 impl TelemetryUi {
     pub fn new(socket: UdpSocket) -> TelemetryUi {
-        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
-        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
-        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 100.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let motor_temp_graph = LineGraph::new((400.0, 150.0),
-                                              (0.0, 100.0),
+                                              (0.0, 4.0 * 3600.0 * 2.0),
                                               (0.0, 100.0),
                                               vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]);
 
@@ -156,6 +163,13 @@ impl TelemetryUi {
 
             l_motor_amp: AvgVal::new(30),
             r_motor_amp: AvgVal::new(30),
+
+            // GPS
+            latitude: None,
+            longitude: None,
+            speed: None,
+            gps_altitude: None,
+            angle: None,
 
             motor_temp_graph: motor_temp_graph,
             l_motor_temp: AvgVal::new(40),
@@ -448,6 +462,85 @@ impl TelemetryUi {
             .font_size(16)
             .color(l_motor_amp_color)
             .set(R_MOTOR_AMP_LABEL, ui);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // GPS section
+
+        Label::new("GPS")
+            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 50.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(GPS_LABEL, ui);
+        
+        // Latitude label
+        let (latitude, latitude_color) =
+            match self.latitude {
+                Some(lat) => {
+                    (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(latitude.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 75.0)
+            .font_size(16)
+            .color(latitude_color)
+            .set(LATITUDE_LABEL, ui);
+
+        // Longitude label
+        let (longitude, longitude_color) =
+            match self.longitude {
+                Some(lng) => {
+                    (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(longitude.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 95.0)
+            .font_size(16)
+            .color(longitude_color)
+            .set(LONGITUDE_LABEL, ui);
+        
+        // Speed label
+        let (speed, speed_color) =
+            match self.speed {
+                Some(speed) => {
+                    (format!("{0:.2} m/s", speed), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(speed.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 115.0)
+            .font_size(16)
+            .color(speed_color)
+            .set(SPEED_LABEL, ui);
+
+        // Altitude label
+        let (gps_altitude, gps_altitude_color) =
+            match self.gps_altitude {
+                Some(alt) => {
+                    (format!("{0:.2} m", alt), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(gps_altitude.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 135.0)
+            .font_size(16)
+            .color(gps_altitude_color)
+            .set(GPS_ALTITUDE_LABEL, ui);
+
+        // Angle label
+        let (angle, angle_color) =
+            match self.angle {
+                Some(angle) => {
+                    (format!("{0:.2} deg", angle), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Label::new(angle.as_str())
+            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 155.0)
+            .font_size(16)
+            .color(angle_color)
+            .set(ANGLE_LABEL, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Temp section
@@ -783,6 +876,13 @@ impl TelemetryUi {
                                                       self.a24_graph.num_points(0) as f64);
                     }
                 },
+                "GPS" => {
+                    self.latitude = Some(packet_parts[1].parse().unwrap());
+                    self.longitude = Some(packet_parts[2].parse().unwrap());
+                    self.speed = Some(packet_parts[3].parse().unwrap());
+                    self.gps_altitude = Some(packet_parts[4].parse().unwrap());
+                    self.angle = Some(packet_parts[5].parse().unwrap());
+                },
                 "L_MOTOR_TEMP" => {
                     self.l_motor_temp.add_value(packet_parts[1].parse().unwrap());
                     let l_motor_temp = self.l_motor_temp.get().unwrap();
@@ -898,8 +998,16 @@ const R_MOTOR_POWER_LABEL: WidgetId = L_MOTOR_AMP_LABEL + 1;
 const R_MOTOR_RPM_LABEL: WidgetId = R_MOTOR_POWER_LABEL + 1;
 const R_MOTOR_AMP_LABEL: WidgetId = R_MOTOR_RPM_LABEL + 1;
 
+// GPS section
+const GPS_LABEL: WidgetId = R_MOTOR_AMP_LABEL + 1;
+const LATITUDE_LABEL: WidgetId = GPS_LABEL + 1;
+const LONGITUDE_LABEL: WidgetId = LATITUDE_LABEL + 1;
+const SPEED_LABEL: WidgetId = LONGITUDE_LABEL + 1;
+const GPS_ALTITUDE_LABEL: WidgetId = SPEED_LABEL + 1;
+const ANGLE_LABEL: WidgetId = GPS_ALTITUDE_LABEL + 1;
+
 // Temp section
-const TEMP_LABEL: WidgetId = R_MOTOR_AMP_LABEL + 1;
+const TEMP_LABEL: WidgetId = ANGLE_LABEL + 1;
 
 const L_MOTOR_TEMP_LABEL: WidgetId = TEMP_LABEL + 1;
 const L_MOTOR_C_LABEL: WidgetId = L_MOTOR_TEMP_LABEL + 1;
