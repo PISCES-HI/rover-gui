@@ -88,7 +88,7 @@ fn main() {
     
     let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.156.26/axis-media/media.amp", None);
     let (mut video1_texture, video1_image) = start_video_stream("rtsp://10.10.156.27/axis-media/media.amp", None);
-    //let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.156.28/axis-media/media.amp", None);
+    let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.156.28/axis-media/media.amp", None);
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -162,8 +162,8 @@ fn main() {
             let video1_image = video1_image.lock().unwrap();
             video1_texture.update(&*video1_image);
             
-            //let video2_image = video2_image.lock().unwrap();
-            //video2_texture.update(&*video2_image);
+            let video2_image = video2_image.lock().unwrap();
+            video2_texture.update(&*video2_image);
         });
         
         // Render GUI
@@ -189,7 +189,7 @@ fn main() {
                     .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                //image(&video2_texture, c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&video2_texture, c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
             });
         });
     }
