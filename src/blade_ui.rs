@@ -139,53 +139,29 @@ impl BladeUi {
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
         
-        // IMU label
-        Label::new("IMU")
-            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 190.0)
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Blade
+        Label::new("Blade")
+            .xy(300.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
-            .set(IMU_LABEL, ui);
-        
-        // GPS label
-        Label::new("GPS")
-            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 400.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(GPS_LABEL, ui);
-        
-        // Longitude label
-        Label::new("19 43' 1\" N")
-            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 425.0)
-            .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(LONGITUDE_LABEL, ui);
-        
-        // Latitude label
-        Label::new("155 4' 1\" W")
-            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 445.0)
-            .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(LATITUDE_LABEL, ui);
-        
-        // Velocity label
-        Label::new("0.5 m/s")
-            .xy((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 465.0)
-            .font_size(16)
-            .color(self.bg_color.plain_contrast())
-            .set(VELOCITY_LABEL, ui);
-
-        // SADL slider
-        Slider::new(self.blade, -100.0, 100.0)
-            .dimensions(150.0, 30.0)
-            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 520.0)
-            .rgb(0.5, 0.3, 0.6)
+            .set(BLADE_LABEL, ui);
+        Button::new()
+            .xy(370.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
-            .label("BLADE")
-            .label_color(white())
-            .react(|new_blade| {
-                self.try_update_blade(new_blade);
-            })
-            .set(SADL_SLIDER, ui);
+            .label("Up")
+            .react(|| { self.blade = 100.0; self.send_blade(); })
+            .set(BLADE_UP, ui);
+        Button::new()
+            .xy(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Down")
+            .react(|| { self.blade = -100.0; self.send_blade(); })
+            .set(BLADE_DOWN, ui);
         
         // Left status RPM
         /*Label::new(self.l_rpm_status.as_str())
@@ -282,7 +258,10 @@ const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
-const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
+
+const BLADE_LABEL: WidgetId = F_TILT_SLIDER + 1;
+const BLADE_UP: WidgetId = BLADE_LABEL + 1;
+const BLADE_DOWN: WidgetId = BLADE_UP + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;

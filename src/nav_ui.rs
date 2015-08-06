@@ -414,19 +414,55 @@ impl NavigationUi {
             })
             .set(F_TILT_SLIDER, ui);
 
-        // SADL slider
-        Slider::new(self.sadl, -100.0, 100.0)
-            .dimensions(150.0, 30.0)
-            .xy(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .rgb(0.5, 0.3, 0.6)
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // SADL 
+        Label::new("SADL")
+            .xy(50.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(SADL_LABEL, ui);
+        Button::new()
+            .xy(120.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
-            .label("SADL")
-            .label_color(white())
-            .react(|new_sadl| {
-                self.try_update_sadl(new_sadl);
-            })
-            .set(SADL_SLIDER, ui);
+            .label("Up")
+            .react(|| { self.sadl = 100.0; self.send_sadl(); })
+            .set(SADL_UP, ui);
+        Button::new()
+            .xy(185.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Down")
+            .react(|| { self.sadl = -100.0; self.send_sadl(); })
+            .set(SADL_DOWN, ui);
 
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Blade
+        Label::new("Blade")
+            .xy(300.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(BLADE_LABEL, ui);
+        Button::new()
+            .xy(370.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Up")
+            .react(|| { self.blade = 100.0; self.send_blade(); })
+            .set(BLADE_UP, ui);
+        Button::new()
+            .xy(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .dimensions(60.0, 30.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Down")
+            .react(|| { self.blade = -100.0; self.send_blade(); })
+            .set(BLADE_DOWN, ui);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
         // Command section
         Label::new("Command")
             .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 580.0)
@@ -563,57 +599,67 @@ impl NavigationUi {
         }
 
         match key {
-            W => {
+            Up => {
                 // Forward
                 self.l_rpm = 100.0;
                 self.r_rpm = 100.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            S => {
+            Down => {
                 // Forward
                 self.l_rpm = -100.0;
                 self.r_rpm = -100.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            A => {
+            Left => {
                 // Forward
                 self.l_rpm = -100.0;
                 self.r_rpm = 100.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            D => {
+            Right => {
                 // Forward
                 self.l_rpm = 100.0;
                 self.r_rpm = -100.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            R => {
+            D2 => {
                 // SADL up
                 self.sadl = 100.0;
                 self.send_sadl();
             },
-            F => {
-                // SADL up
+            D1 => {
+                // SADL down
                 self.sadl = -100.0;
                 self.send_sadl();
             },
-            Up => {
+            D0 => {
+                // Blade up
+                self.blade = 100.0;
+                self.send_blade();
+            },
+            D9 => {
+                // Blade down
+                self.blade = -100.0;
+                self.send_blade();
+            },
+            W => {
                 // Camera up
                 self.f_tilting = 1.0;
             },
-            Down => {
+            S => {
                 // Camera down
                 self.f_tilting = -1.0;
             },
-            Left => {
+            A => {
                 // Camera left
                 self.f_panning = -1.0;
             },
-            Right => {
+            D => {
                 // Camera right
                 self.f_panning = 1.0;
             },
@@ -629,23 +675,28 @@ impl NavigationUi {
         }
 
         match key {
-            W | S | A | D => {
+            Up | Down | Left | Right => {
                 // LR motor stop
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            R | F => {
+            D1 | D2 => {
                 // SADL stop
                 self.sadl = 0.0;
                 self.send_sadl();
             },
-            Up | Down => {
+            D9 | D0 => {
+                // Blade stop
+                self.blade = 0.0;
+                self.send_blade();
+            },
+            W | S => {
                 self.f_tilting = 0.0;
                 self.send_f_tilt();
             },
-            Left | Right => {
+            A | D => {
                 self.f_panning = 0.0;
                 self.send_f_pan();
             },
@@ -735,6 +786,11 @@ impl NavigationUi {
         self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
     }
 
+    pub fn send_blade(&self) -> io::Result<usize> {
+        let packet = format!("F{}", self.blade as i32);
+        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+    }
+
     pub fn send_command(&self) -> io::Result<usize> {
         let packet = format!("Z{}", self.command);
         self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
@@ -774,11 +830,18 @@ const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
 const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
-const SADL_SLIDER: WidgetId = F_TILT_SLIDER + 1;
-const COMMAND_LABEL: WidgetId = SADL_SLIDER + 1;
+const COMMAND_LABEL: WidgetId = F_TILT_SLIDER + 1;
 const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
 const SEND_COMMAND_BUTTON: WidgetId = COMMAND_INPUT + 1;
 const ACTIVATE_COMMAND_BUTTON: WidgetId = SEND_COMMAND_BUTTON + 1;
+
+const SADL_LABEL: WidgetId = ACTIVATE_COMMAND_BUTTON + 1;
+const SADL_UP: WidgetId = SADL_LABEL + 1;
+const SADL_DOWN: WidgetId = SADL_UP + 1;
+
+const BLADE_LABEL: WidgetId = SADL_DOWN + 1;
+const BLADE_UP: WidgetId = BLADE_LABEL + 1;
+const BLADE_DOWN: WidgetId = BLADE_UP + 1;
 
 /*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
 const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
