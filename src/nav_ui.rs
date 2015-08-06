@@ -627,22 +627,22 @@ impl NavigationUi {
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
-            D2 => {
+            D1 => {
                 // SADL up
                 self.sadl = 100.0;
                 self.send_sadl();
             },
-            D1 => {
+            D2 => {
                 // SADL down
                 self.sadl = -100.0;
                 self.send_sadl();
             },
-            D0 => {
+            D9 => {
                 // Blade up
                 self.blade = 100.0;
                 self.send_blade();
             },
-            D9 => {
+            D0 => {
                 // Blade down
                 self.blade = -100.0;
                 self.send_blade();
