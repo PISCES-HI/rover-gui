@@ -110,7 +110,9 @@ fn main() {
         });
         
         // Update
-        e.update(|_| {
+        e.update(|u_args| {
+            nav_ui.update(u_args.dt);
+
             while let Ok(packet) = packet_r.try_recv() {
                 nav_ui.handle_packet(packet);
             }

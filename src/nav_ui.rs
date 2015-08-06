@@ -59,8 +59,10 @@ pub struct NavigationUi {
     
     // Forward camera controls
     pub f_pan: f32,
+    pub f_panning: f32,
     pub last_f_pan_time: time::Tm,
     pub f_tilt: f32,
+    pub f_tilting: f32,
     pub last_f_tilt_time: time::Tm,
 
     pub command: String,
@@ -96,8 +98,10 @@ impl NavigationUi {
             blade: 0.0,
             
             f_pan: 90.0,
+            f_panning: 0.0,
             last_f_pan_time: time::now(),
             f_tilt: 130.0,
+            f_tilting: 0.0,
             last_f_tilt_time: time::now(),
 
             command: "".to_string(),
@@ -105,6 +109,13 @@ impl NavigationUi {
             
             socket: socket,
         }
+    }
+
+    pub fn update(&mut self, dt: f64) {
+        let dt = dt as f32;
+
+        self.f_pan += self.f_panning*180.0*dt;
+        self.f_tilt += self.f_tilting*180.0*dt;
     }
     
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
@@ -512,11 +523,11 @@ impl NavigationUi {
                     self.r_rpm_status = packet_parts[2].clone();
                 },
                 "GPS" => {
-                    self.latitude = Some(packet_parts[1].parse().unwrap());
-                    self.longitude = Some(packet_parts[2].parse().unwrap());
-                    self.speed = Some(packet_parts[3].parse().unwrap());
-                    self.altitude = Some(packet_parts[4].parse().unwrap());
-                    self.angle = Some(packet_parts[5].parse().unwrap());
+                    self.latitude = packet_parts[1].parse().ok();
+                    self.longitude = packet_parts[2].parse().ok();
+                    self.speed = packet_parts[3].parse().ok();
+                    self.altitude = packet_parts[4].parse().ok();
+                    self.angle = packet_parts[5].parse().ok();
                 },
                 "IMU" => {
                     let ax: f64 = packet_parts[1].parse().unwrap();
@@ -592,23 +603,19 @@ impl NavigationUi {
             },
             Up => {
                 // Camera up
-                self.f_tilt += f32::min(5.0, 180.0 - self.f_tilt);
-                self.send_f_tilt();
+                self.f_tilting = 1.0;
             },
             Down => {
                 // Camera down
-                self.f_tilt -= f32::min(5.0, self.f_tilt - 90.0);
-                self.send_f_tilt();
+                self.f_tilting = -1.0;
             },
             Left => {
-                // Camera up
-                self.f_pan -= f32::min(5.0, self.f_pan - 0.0);
-                self.send_f_pan();
+                // Camera left
+                self.f_panning = -1.0;
             },
             Right => {
-                // Camera down
-                self.f_pan += f32::min(5.0, 180.0 - self.f_pan);
-                self.send_f_pan();
+                // Camera right
+                self.f_panning = 1.0;
             },
             _ => { },
         }
@@ -633,6 +640,14 @@ impl NavigationUi {
                 // SADL stop
                 self.sadl = 0.0;
                 self.send_sadl();
+            },
+            Up | Down => {
+                self.f_tilting = 0.0;
+                self.send_f_tilt();
+            },
+            Left | Right => {
+                self.f_panning = 0.0;
+                self.send_f_pan();
             },
             _ => { },
         }

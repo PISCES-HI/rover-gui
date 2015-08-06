@@ -25,19 +25,21 @@ pub fn start_video_stream(path: &str, out_path: Option<&str>) -> (Texture, Arc<M
     let rgba_img = RgbaImage::new(512, 512);
     let video_texture = Texture::from_image(&rgba_img);
     let rgba_img = Arc::new(Mutex::new(rgba_img));
-    
-    let mut format_context = format::open(&path).unwrap();
-    format::dump(&format_context, 0, Some(path));
 
     let mut out_file = out_path.map(|p| BufWriter::new(File::create(p).unwrap()));
     if let Some(ref mut out_file) = out_file {
         out_file.write_all(&[0, 0, 0, 1]);
     }
+
+    let path = path.to_string();
     
     let thread_rgba_img = rgba_img.clone();
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
+            let mut format_context = format::open(&path).unwrap();
+            format::dump(&format_context, 0, Some(path.as_str()));
+
             let stream_codec =
                 format_context.streams()
                               .filter(|stream| stream.codec().medium() == media::Type::Video)
