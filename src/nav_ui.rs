@@ -559,11 +559,13 @@ impl NavigationUi {
                     self.r_rpm_status = packet_parts[2].clone();
                 },
                 "GPS" => {
-                    self.latitude = packet_parts[1].parse().ok();
-                    self.longitude = packet_parts[2].parse().ok();
-                    self.speed = packet_parts[3].parse().ok();
-                    self.altitude = packet_parts[4].parse().ok();
-                    self.angle = packet_parts[5].parse().ok();
+                    if packet_parts.len() == 6 {
+                        self.latitude = packet_parts[1].parse().ok();
+                        self.longitude = packet_parts[2].parse().ok();
+                        self.speed = packet_parts[3].parse().ok();
+                        self.altitude = packet_parts[4].parse().ok();
+                        self.angle = packet_parts[5].parse().ok();
+                    }
                 },
                 "IMU" => {
                     let ax: f64 = packet_parts[1].parse().unwrap();
