@@ -1,4 +1,5 @@
 Cargo.lock
+*.swp
 *.dll
 */target/*
 */data/*

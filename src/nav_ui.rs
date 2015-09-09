@@ -227,13 +227,13 @@ impl NavigationUi {
         // IMU pitch
 
         Label::new(format!("Pitch").as_str())
-            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 350.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_PITCH_LABEL, ui);
 
         Label::new(pitch.as_str())
-            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 350.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_PITCH_VALUE, ui);
@@ -241,13 +241,13 @@ impl NavigationUi {
         // IMU roll
 
         Label::new(format!("Roll").as_str())
-            .xy((-ui.win_w / 2.0) + 190.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 190.0, (ui.win_h / 2.0) - 350.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_ROLL_LABEL, ui);
 
         Label::new(roll.as_str())
-            .xy((-ui.win_w / 2.0) + 270.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 250.0, (ui.win_h / 2.0) - 350.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_ROLL_VALUE, ui);
@@ -255,13 +255,13 @@ impl NavigationUi {
         // IMU heading
 
         Label::new("Heading")
-            .xy((-ui.win_w / 2.0) + 340.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 340.0, (ui.win_h / 2.0) - 350.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
 
         Label::new(heading.as_str())
-            .xy((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 300.0)
+            .xy((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 350.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_HEADING_VALUE, ui);
