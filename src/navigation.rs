@@ -32,9 +32,10 @@ use sdl2_window::Sdl2Window;
 use nav_ui::NavigationUi;
 use video_stream::{init_ffmpeg, start_video_stream};
 
-pub mod line_graph;
-pub mod nav_ui;
-pub mod video_stream;
+mod line_graph;
+mod nav_ui;
+mod video_stream;
+mod imu;
 
 fn main() {
     init_ffmpeg();

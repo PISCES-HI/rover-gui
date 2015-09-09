@@ -25,6 +25,8 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
 use time;
 
+use imu;
+
 enum MissionTime {
     Paused(time::Duration),
     Running(time::Tm, time::Duration),
@@ -37,6 +39,7 @@ pub struct NavigationUi {
 
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
+    heading: imu::Heading,
 
     // GPS
     latitude: Option<f64>,
@@ -79,6 +82,7 @@ impl NavigationUi {
             mission_time: MissionTime::Paused(time::Duration::zero()),
 
             pitch_roll_heading: None,
+            heading: imu::Heading::new(),
 
             latitude: None,
             longitude: None,
@@ -259,6 +263,8 @@ impl NavigationUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
+
+        self.heading.draw(c.trans(320.0, 215.0), gl);
 
         Label::new(heading.as_str())
             .xy((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 350.0)
@@ -587,6 +593,7 @@ impl NavigationUi {
                     }
                     heading = 360.0 - heading;
                     self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                    self.heading.set_angle(heading);
                 },
                 _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
             }
