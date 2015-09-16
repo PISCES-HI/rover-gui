@@ -865,11 +865,13 @@ impl TelemetryUi {
                     self.a24_graph.add_point(0, point_x, h_24_a);
                 },
                 "GPS" => {
-                    self.latitude = Some(packet_parts[1].parse().unwrap());
-                    self.longitude = Some(packet_parts[2].parse().unwrap());
-                    self.speed = Some(packet_parts[3].parse().unwrap());
-                    self.gps_altitude = Some(packet_parts[4].parse().unwrap());
-                    self.angle = Some(packet_parts[5].parse().unwrap());
+                    if packet_parts.len() == 6 {
+                        self.latitude = packet_parts[1].parse().ok();
+                        self.longitude = packet_parts[2].parse().ok();
+                        self.speed = packet_parts[3].parse().ok();
+                        self.gps_altitude = packet_parts[4].parse().ok();
+                        self.angle = packet_parts[5].parse().ok();
+                    }
                 },
                 "L_MOTOR_TEMP" => {
                     self.l_motor_temp.add_value(packet_parts[1].parse().unwrap());
