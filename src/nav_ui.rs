@@ -760,12 +760,12 @@ impl NavigationUi {
     
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
     
     pub fn send_r_rpm(&self) -> io::Result<usize> {
         let packet = format!("B{}", self.r_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
     
     pub fn send_f_pan(&mut self) -> io::Result<usize> {
@@ -773,7 +773,7 @@ impl NavigationUi {
         if time_since >= 500 {
             self.last_f_pan_time = time::now();
             let packet = format!("C{}", self.f_pan as i32);
-            self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+            self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
         } else {
             Ok(0)
         }
@@ -784,7 +784,7 @@ impl NavigationUi {
         if time_since >= 500 {
             self.last_f_tilt_time = time::now();
             let packet = format!("D{}", self.f_tilt as i32);
-            self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+            self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
         } else {
             Ok(0)
         }
@@ -792,17 +792,17 @@ impl NavigationUi {
 
     pub fn send_sadl(&self) -> io::Result<usize> {
         let packet = format!("E{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
 
     pub fn send_blade(&self) -> io::Result<usize> {
         let packet = format!("F{}", self.blade as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
 
     pub fn send_command(&self) -> io::Result<usize> {
         let packet = format!("Z{}", self.command);
-        self.socket.send_to(packet.as_bytes(), ("10.10.156.25", 30001))
+        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
 }
 
