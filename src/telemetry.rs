@@ -1,6 +1,7 @@
 #![feature(iter_arith)]
 #![feature(convert)]
 
+use std::fs;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -70,9 +71,13 @@ fn main() {
             }
         }).unwrap();
     
-    let mut tele_ui = TelemetryUi::new(socket);
+    let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
+    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
+    let mut tele_ui = TelemetryUi::new(socket, mission_folder.as_str());
     
     ///////////////////////////////////////////////////////////////////////////////////////
+
+    let mut last_update_time = time::now();
 
     for e in event_iter {
         ui.handle_event(&e);
@@ -95,6 +100,12 @@ fn main() {
         e.update(|_| {
             while let Ok(packet) = packet_r.try_recv() {
                 tele_ui.handle_packet(packet);
+            }
+
+            // Log some data
+            if (time::now()-last_update_time).num_seconds() >= 1 {
+                last_update_time = time::now();
+                tele_ui.log_data();
             }
         });
         

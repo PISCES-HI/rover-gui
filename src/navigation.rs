@@ -1,6 +1,5 @@
 #![feature(convert)]
 
-use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -117,7 +116,7 @@ fn main() {
             while let Ok(packet) = packet_r.try_recv() {
                 nav_ui.handle_packet(packet);
             }
-            
+
             if let Some(ref controller) = controller {
                 // Control RPM with analog sticks
                 let left_y = controller.get_axis(controller::Axis::LeftY);

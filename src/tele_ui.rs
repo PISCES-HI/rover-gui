@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+use std::fs::File;
 use std::io;
+use std::io::{BufWriter, Write};
 use std::net::UdpSocket;
 use std::ops::DerefMut;
 
@@ -69,10 +72,6 @@ pub struct TelemetryUi {
 
     mission_time: MissionTime,
 
-    // RPM stuff
-    l_rpm_status: String,
-    r_rpm_status: String,
-
     // Voltage stuff
     v48_graph: LineGraph,
     h_48_v: AvgVal,
@@ -122,10 +121,12 @@ pub struct TelemetryUi {
 
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
+
+    log_files: HashMap<String, BufWriter<File>>,
 }
 
 impl TelemetryUi {
-    pub fn new(socket: UdpSocket) -> TelemetryUi {
+    pub fn new(socket: UdpSocket, mission_folder: &str) -> TelemetryUi {
         let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
@@ -134,15 +135,55 @@ impl TelemetryUi {
                                               (0.0, 100.0),
                                               vec![[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]);
 
+        // Create the log files
+        let mut log_files = HashMap::new();
+        log_files.insert("imu".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/imu",
+                                                             mission_folder).as_str()).unwrap()));
+        log_files.insert("gps".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/gps",
+                                                             mission_folder).as_str()).unwrap()));
+        log_files.insert("volt".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/volt",
+                                                             mission_folder).as_str()).unwrap()));
+        log_files.insert("amp".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/amp",
+                                                             mission_folder).as_str()).unwrap()));
+        log_files.insert("temp".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/motor_temp",
+                                                             mission_folder).as_str()).unwrap()));
+        log_files.insert("weather".to_string(),
+                         BufWriter::new(File::create(format!("mission_data/{}/weather",
+                                                             mission_folder).as_str()).unwrap()));
+        // Write log headers
+        log_files.get_mut("imu").unwrap().write_all("#pitch\troll\theading\n".as_bytes()).unwrap();
+        log_files.get_mut("gps")
+                 .unwrap()
+                 .write_all("#latitude\tlongitude\tspeed\taltitude\tangle\n".as_bytes())
+                 .unwrap();
+        log_files.get_mut("volt")
+                 .unwrap()
+                 .write_all("#H-48v\tH-24v\tP-12v E\tP-12-v PL\n".as_bytes())
+                 .unwrap();
+        log_files.get_mut("amp")
+                 .unwrap()
+                 .write_all("#H-24v\tP-12v E\ttL motor\tR motor\n".as_bytes())
+                 .unwrap();
+        log_files.get_mut("temp")
+                 .unwrap()
+                 .write_all("#L motor\tR motor\tUpper Avionics\tLower Avionics\n".as_bytes())
+                 .unwrap();
+        log_files.get_mut("weather")
+                 .unwrap()
+                 .write_all("#wind speed\tpressure\taltitude\ttemp\n".as_bytes())
+                 .unwrap();
+
         TelemetryUi {
             socket: socket,
 
             bg_color: rgb(0.2, 0.35, 0.45),
 
             mission_time: MissionTime::Paused(time::Duration::zero()),
-
-            l_rpm_status: "NO DATA".to_string(),
-            r_rpm_status: "NO DATA".to_string(),
 
             v48_graph: v48_graph,
             h_48_v: AvgVal::new(60),
@@ -188,7 +229,40 @@ impl TelemetryUi {
             temp: None,
 
             pitch_roll_heading: None,
+
+            log_files: log_files,
         }
+    }
+
+    pub fn log_data(&mut self) {
+        // imu
+        match self.pitch_roll_heading {
+            Some((pitch, roll, heading)) => {
+                write!(&mut self.log_files.get_mut("imu").unwrap(),
+                       "{}\t{}\t{}\n", pitch, roll, heading).unwrap();
+            },
+            None => { write!(&mut self.log_files.get_mut("imu").unwrap(), "none").unwrap(); },
+        }
+        // gps
+        write!(&mut self.log_files.get_mut("gps").unwrap(),
+               "{:?}\t{:?}\t{:?}\t{:?}\t{:?}\n", self.latitude, self.longitude,
+               self.speed, self.gps_altitude, self.angle).unwrap();
+        // volt
+        write!(&mut self.log_files.get_mut("volt").unwrap(),
+               "{:?}\t{:?}\t{:?}\t{:?}\n", self.h_48_v.get(), self.h_24_v.get(),
+               self.p_12_e_v.get(), self.p_12_pl_v.get()).unwrap();
+        // amp
+        write!(&mut self.log_files.get_mut("amp").unwrap(),
+               "{:?}\t{:?}\t{:?}\t{:?}\n", self.h_24_a.get(), self.p_12_e_a.get(),
+               self.l_motor_amp.get(), self.r_motor_amp.get()).unwrap();
+        // temp
+        write!(&mut self.log_files.get_mut("temp").unwrap(),
+               "{:?}\t{:?}\t{:?}\t{:?}\n", self.l_motor_temp.get(), self.r_motor_temp.get(),
+               self.upper_avionics_temp.get(), self.lower_avionics_temp.get()).unwrap();
+        // weather
+        write!(&mut self.log_files.get_mut("weather").unwrap(),
+               "{:?}\t{:?}\t{:?}\t{:?}\n", self.wind_speed.get(), self.pressure,
+               self.altitude, self.temp).unwrap();
     }
 
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
@@ -827,10 +901,6 @@ impl TelemetryUi {
             let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
 
             match packet_parts[0].as_str() {
-                "RPM_STATUS" => {
-                    self.l_rpm_status = packet_parts[1].clone();
-                    self.r_rpm_status = packet_parts[2].clone();
-                },
                 "VOLT" => {
                     /////////////////////
                     self.h_48_v.add_value(packet_parts[1].parse().unwrap());

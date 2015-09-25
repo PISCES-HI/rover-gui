@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use std::io;
 use std::net::UdpSocket;
 use std::ops::DerefMut;
@@ -52,8 +54,6 @@ pub struct NavigationUi {
     pub l_rpm: f32,
     pub r_rpm: f32,
     pub max_rpm: f32,
-    l_rpm_status: String,
-    r_rpm_status: String,
 
     pub sadl: f32,
     pub last_sadl_time: time::Tm,
@@ -93,8 +93,6 @@ impl NavigationUi {
             l_rpm: 0.0,
             r_rpm: 0.0,
             max_rpm: 100.0,
-            l_rpm_status: "UNAVAILABLE".to_string(),
-            r_rpm_status: "UNAVAILABLE".to_string(),
 
             sadl: 0.0,
             last_sadl_time: time::now(),
@@ -110,7 +108,7 @@ impl NavigationUi {
 
             command: "".to_string(),
             command_mode: false,
-            
+
             socket: socket,
         }
     }
@@ -511,41 +509,6 @@ impl NavigationUi {
             .label(activate_command_label)
             .react(|| { self.command_mode = !self.command_mode; })
             .set(ACTIVATE_COMMAND_BUTTON, ui);
-        
-        // Left status RPM
-        /*Label::new(self.l_rpm_status.as_str())
-            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 60.0)
-            .font_size(32)
-            .color(self.bg_color.plain_contrast())
-            .set(L_RPM_STATUS, ui);
-        
-        // Right status RPM
-        Label::new(self.r_rpm_status.as_str())
-            .xy((ui.win_w / 2.0) - 110.0, (ui.win_h / 2.0) - 60.0)
-            .font_size(32)
-            .color(self.bg_color.plain_contrast())
-            .set(R_RPM_STATUS, ui);
-        
-        // Blade slider
-        Slider::new(self.blade, -10.0, 10.0)
-            .dimensions(200.0, 30.0)
-            .xy(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 160.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("Blade")
-            .label_color(white())
-            .react(|new_blade| {
-                self.try_update_blade(new_blade);
-            })
-            .set(BLADE_SLIDER, ui);
-        
-        // 12v bus label
-        Label::new("12v Bus")
-            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 215.0)
-            .font_size(32)
-            .color(self.bg_color.plain_contrast())
-            .set(VOLTAGE_12_LABEL, ui);
-        */
 
         // Draw our UI!
         ui.draw(c, gl);
@@ -560,10 +523,6 @@ impl NavigationUi {
             let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
             
             match packet_parts[0].as_str() {
-                "RPM_STATUS" => {
-                    self.l_rpm_status = packet_parts[1].clone();
-                    self.r_rpm_status = packet_parts[2].clone();
-                },
                 "GPS" => {
                     if packet_parts.len() == 6 {
                         self.latitude = packet_parts[1].parse().ok();
@@ -851,8 +810,3 @@ const SADL_DOWN: WidgetId = SADL_UP + 1;
 const BLADE_LABEL: WidgetId = SADL_DOWN + 1;
 const BLADE_UP: WidgetId = BLADE_LABEL + 1;
 const BLADE_DOWN: WidgetId = BLADE_UP + 1;
-
-/*const L_RPM_STATUS: WidgetId = STOP_BUTTON + 1;
-const R_RPM_STATUS: WidgetId = L_RPM_STATUS + 1;
-const BLADE_SLIDER: WidgetId = R_RPM_STATUS + 1;
-const VOLTAGE_12_LABEL: WidgetId = BLADE_SLIDER + 1;*/
