@@ -86,9 +86,9 @@ fn main() {
 
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", None);
-    let (mut video1_texture, video1_image) = start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", None);
-    let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", None);
+    let (mut video0_texture, video0_image) = start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", "forward.mkv");
+    let (mut video1_texture, video1_image) = start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", "reverse.mkv");
+    let (mut video2_texture, video2_image) = start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", "hazard.mkv");
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
