@@ -32,7 +32,7 @@ pub fn start_video_stream(path: &str, out_path: Option<&str>) -> (Texture, Arc<M
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let mut format_context = format::open(&path).unwrap();
+            let mut format_context = format::input(&path).unwrap();
             //format::dump(&format_context, 0, Some(path.as_str()));
 
             let stream_codec =
@@ -42,14 +42,14 @@ pub fn start_video_stream(path: &str, out_path: Option<&str>) -> (Texture, Arc<M
                               .next().expect("No video streams in stream");
             let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
             
-            let codec_context = stream_codec.clone().open(&video_codec).unwrap();
+            let codec_context = stream_codec.clone();
 
             //let mut out_context = out_path.as_ref().map(|out_path| format::output(out_path).unwrap());
             /*if let Some(ref mut out_context) = out_context {
                 out_context.add_stream(&codec::encoder::find(stream_codec.id()).unwrap());
             }*/
             
-            let mut decoder = codec_context.decoder().unwrap().video().unwrap();
+            let mut decoder = codec_context.decoder().video().unwrap();
             let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
                                                     Pixel::RGBA, 512, 512,
                                                     scaling::flag::BILINEAR).unwrap();
