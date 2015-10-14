@@ -159,6 +159,8 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                     rec_packet.set_stream(0);
                     rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
                     rec_packet.write_interleaved(&mut rec_format);
+                } else {
+                    println!("WARNING: Failed to write video frame");
                 }
             }
 
