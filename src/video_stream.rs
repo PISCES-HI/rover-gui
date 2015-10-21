@@ -119,7 +119,6 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                     codec.set_width(decoder_width);
                     codec.set_height(decoder_height);
                     codec.set_format(ffmpeg::format::Pixel::YUV420P);
-                    //codec.set_format(decoder.format());
                     codec.set_time_base((1, fps as i32));
                     codec.set_flags(ffmpeg::codec::flag::GLOBAL_HEADER);
 
@@ -127,8 +126,6 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                     stream.set_rate((fps as i32, 1));
 
                     codec.open_as(ffmpeg::codec::Id::VP9).unwrap()
-                    //codec.open().unwrap()
-                    //codec.encoder()
             };
 
             let mut rec_converter =
@@ -162,6 +159,12 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                 } else {
                     println!("WARNING: Failed to write video frame");
                 }
+            }
+
+            while let Ok(true) = rec_video.flush(&mut rec_packet) {
+                rec_packet.set_stream(0);
+                rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
+                rec_packet.write_interleaved(&mut rec_format);
             }
 
             rec_format.write_trailer().unwrap();

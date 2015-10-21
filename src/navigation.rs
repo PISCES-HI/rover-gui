@@ -1,5 +1,6 @@
 #![feature(convert)]
 
+use std::fs;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -85,13 +86,16 @@ fn main() {
     nav_ui.send_f_tilt();
 
     ////////////////////////////////////////////////////////////////////////////////////////
+
+    let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
+    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
     
     let (mut video0_texture, video0_image) =
-        start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", Some("forward.mkv".to_string()));
+        start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
     let (mut video1_texture, video1_image) =
         start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", None);
     let (mut video2_texture, video2_image) =
-        start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some("hazard.mkv".to_string()));
+        start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
