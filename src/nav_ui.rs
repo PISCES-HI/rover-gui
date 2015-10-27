@@ -385,6 +385,7 @@ impl NavigationUi {
             .frame(1.0)
             .label("Stop")
             .react(|| {
+                self.send_brake();
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
                 self.send_l_rpm();
@@ -496,19 +497,24 @@ impl NavigationUi {
             .react(|| { self.send_command(); })
             .set(SEND_COMMAND_BUTTON, ui);
 
-        let activate_command_label =
+        let mode_label =
             match self.command_mode {
-                true => "Real-time Mode",
-                false => "Command Mode",
+                true  => "Command Mode",
+                false => "Real-time Mode",
             };
+        Label::new(mode_label)
+            .xy(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
+            .font_size(22)
+            .color(self.bg_color.plain_contrast())
+            .set(MODE_LABEL, ui);
         Button::new()
             .dimensions(150.0, 30.0)
             .xy(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
-            .label(activate_command_label)
+            .label("Toggle Mode")
             .react(|| { self.command_mode = !self.command_mode; })
-            .set(ACTIVATE_COMMAND_BUTTON, ui);
+            .set(MODE_TOGGLE_BUTTON, ui);
 
         // Draw our UI!
         ui.draw(c, gl);
@@ -567,6 +573,15 @@ impl NavigationUi {
         }
 
         match key {
+            Space => {
+                // Brake
+                self.send_brake();
+                // LR motor stop
+                self.l_rpm = 0.0;
+                self.r_rpm = 0.0;
+                self.send_l_rpm();
+                self.send_r_rpm();
+            }
             Up => {
                 // Forward
                 self.l_rpm = 100.0;
@@ -716,6 +731,10 @@ impl NavigationUi {
             Ok(0)
         }
     }
+
+    pub fn send_brake(&self) -> io::Result<usize> {
+        self.socket.send_to(&[b'G'], ("10.10.155.165", 30001))
+    }
     
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
@@ -801,9 +820,10 @@ const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const COMMAND_LABEL: WidgetId = F_TILT_SLIDER + 1;
 const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
 const SEND_COMMAND_BUTTON: WidgetId = COMMAND_INPUT + 1;
-const ACTIVATE_COMMAND_BUTTON: WidgetId = SEND_COMMAND_BUTTON + 1;
+const MODE_LABEL: WidgetId = SEND_COMMAND_BUTTON + 1;
+const MODE_TOGGLE_BUTTON: WidgetId = MODE_LABEL + 1;
 
-const SADL_LABEL: WidgetId = ACTIVATE_COMMAND_BUTTON + 1;
+const SADL_LABEL: WidgetId = MODE_TOGGLE_BUTTON + 1;
 const SADL_UP: WidgetId = SADL_LABEL + 1;
 const SADL_DOWN: WidgetId = SADL_UP + 1;
 
