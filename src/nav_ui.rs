@@ -385,11 +385,11 @@ impl NavigationUi {
             .frame(1.0)
             .label("Stop")
             .react(|| {
-                self.send_brake();
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
+                self.send_brake();
             })
             .set(STOP_BUTTON, ui);
         
@@ -574,13 +574,13 @@ impl NavigationUi {
 
         match key {
             Space => {
-                // Brake
-                self.send_brake();
                 // LR motor stop
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
                 self.send_l_rpm();
                 self.send_r_rpm();
+                // Brake
+                self.send_brake();
             }
             Up => {
                 // Forward

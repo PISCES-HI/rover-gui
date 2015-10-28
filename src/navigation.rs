@@ -1,6 +1,7 @@
 #![feature(convert)]
 
 use std::fs;
+use std::mem;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -90,22 +91,46 @@ fn main() {
     let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
     fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
     
-    let (mut video0_texture, video0_image) =
+    let (video0_texture, video0_image) =
         start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
-    let (mut video1_texture, video1_image) =
+    let (video1_texture, video1_image) =
         start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", None);
-    let (mut video2_texture, video2_image) =
+    let (video2_texture, video2_image) =
         start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
+
+    let mut vid_textures = [video0_texture, video1_texture, video2_texture];
+    let mut vid_displays = [0, 1, 2];
+
+    let mut mouse_x = 0.0;
+    let mut mouse_y = 0.0;
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
     for e in event_iter {
         ui.handle_event(&e);
+
+        e.mouse_cursor(|x, y| {
+            mouse_x = x;
+            mouse_y = y;
+        });
         
         e.press(|button| {
             match button {
                 input::Button::Keyboard(key) => nav_ui.on_key_pressed(key), 
-                _ => { },
+                input::Button::Mouse(b) => {
+                    if b == input::mouse::MouseButton::Left {
+                        println!("whoo {} {}", mouse_x, mouse_y);
+                        if mouse_x >= 1280.0- 700.0-10.0 && mouse_x <= 1280.0-350.0-10.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
+                            let tmp = vid_displays[0];
+                            vid_displays[0] = vid_displays[1];
+                            vid_displays[1] = tmp;
+                        } else if mouse_x >= 1280.0-350.0-5.0 && mouse_x <= 1280.0-5.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
+                            let tmp = vid_displays[0];
+                            vid_displays[0] = vid_displays[2];
+                            vid_displays[2] = tmp;
+                        }
+                    }
+                },
             }
         });
         
@@ -166,13 +191,13 @@ fn main() {
             }
             
             let video0_image = video0_image.lock().unwrap();
-            video0_texture.update(&*video0_image);
+            vid_textures[0].update(&*video0_image);
             
             let video1_image = video1_image.lock().unwrap();
-            video1_texture.update(&*video1_image);
+            vid_textures[1].update(&*video1_image);
             
             let video2_image = video2_image.lock().unwrap();
-            video2_texture.update(&*video2_image);
+            vid_textures[2].update(&*video2_image);
         });
         
         // Render GUI
@@ -186,19 +211,19 @@ fn main() {
                     .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&video0_texture, c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&video1_texture, c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&video2_texture, c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
             });
         });
     }
