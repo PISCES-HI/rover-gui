@@ -119,7 +119,6 @@ fn main() {
                 input::Button::Keyboard(key) => nav_ui.on_key_pressed(key), 
                 input::Button::Mouse(b) => {
                     if b == input::mouse::MouseButton::Left {
-                        println!("whoo {} {}", mouse_x, mouse_y);
                         if mouse_x >= 1280.0- 700.0-10.0 && mouse_x <= 1280.0-350.0-10.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
                             let tmp = vid_displays[0];
                             vid_displays[0] = vid_displays[1];

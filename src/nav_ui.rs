@@ -55,6 +55,8 @@ pub struct NavigationUi {
     pub r_rpm: f32,
     pub max_rpm: f32,
 
+    pub motor_speed: f32,
+
     pub sadl: f32,
     pub last_sadl_time: time::Tm,
 
@@ -94,6 +96,8 @@ impl NavigationUi {
             r_rpm: 0.0,
             max_rpm: 100.0,
 
+            motor_speed: 1.0,
+
             sadl: 0.0,
             last_sadl_time: time::now(),
             
@@ -116,8 +120,8 @@ impl NavigationUi {
     pub fn update(&mut self, dt: f64) {
         let dt = dt as f32;
 
-        self.f_pan += self.f_panning*180.0*dt;
-        self.f_tilt += self.f_tilting*180.0*dt;
+        self.f_pan += self.f_panning*180.0*dt; // 180 degrees per second
+        self.f_tilt += self.f_tilting*90.0*dt; // 90 degrees per second
     }
     
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
@@ -392,6 +396,20 @@ impl NavigationUi {
                 self.send_brake();
             })
             .set(STOP_BUTTON, ui);
+
+
+        // Motor speed slider
+        Slider::new(self.motor_speed, 0.0, 1.0)
+            .dimensions(150.0, 30.0)
+            .xy(420.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 425.0)
+            .rgb(0.5, 0.3, 0.6)
+            .frame(1.0)
+            .label("Motor Speed")
+            .label_color(white())
+            .react(|new_speed| {
+                self.motor_speed = new_speed;
+            })
+            .set(MOTOR_SPEED_SLIDER, ui);
         
         // Camera pan slider
         Slider::new(self.f_pan, 0.0, 180.0)
@@ -584,29 +602,29 @@ impl NavigationUi {
             }
             Up => {
                 // Forward
-                self.l_rpm = 100.0;
-                self.r_rpm = 100.0;
+                self.l_rpm = 100.0*self.motor_speed;
+                self.r_rpm = 100.0*self.motor_speed;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
             Down => {
                 // Forward
-                self.l_rpm = -100.0;
-                self.r_rpm = -100.0;
+                self.l_rpm = -100.0*self.motor_speed;
+                self.r_rpm = -100.0*self.motor_speed;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
             Left => {
                 // Forward
-                self.l_rpm = -100.0;
-                self.r_rpm = 100.0;
+                self.l_rpm = -100.0*self.motor_speed;
+                self.r_rpm = 100.0*self.motor_speed;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
             Right => {
                 // Forward
-                self.l_rpm = 100.0;
-                self.r_rpm = -100.0;
+                self.l_rpm = 100.0*self.motor_speed;
+                self.r_rpm = -100.0*self.motor_speed;
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
@@ -814,7 +832,8 @@ const ANGLE_LABEL: WidgetId = ALTITUDE_LABEL + 1;
 
 const L_RPM_SLIDER: WidgetId = ANGLE_LABEL + 1;
 const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
-const STOP_BUTTON: WidgetId = R_RPM_SLIDER + 1;
+const MOTOR_SPEED_SLIDER: WidgetId = R_RPM_SLIDER+ 1;
+const STOP_BUTTON: WidgetId = MOTOR_SPEED_SLIDER + 1;
 const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
 const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
 const COMMAND_LABEL: WidgetId = F_TILT_SLIDER + 1;
