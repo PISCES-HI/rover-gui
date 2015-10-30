@@ -36,7 +36,7 @@ enum MissionTime {
 
 pub struct NavigationUi {
     bg_color: Color,
-    
+
     mission_time: MissionTime,
 
     // IMU
@@ -49,7 +49,7 @@ pub struct NavigationUi {
     speed: Option<f64>,
     altitude: Option<f64>,
     angle: Option<f64>,
-    
+
     // RPM stuff
     pub l_rpm: f32,
     pub r_rpm: f32,
@@ -61,7 +61,7 @@ pub struct NavigationUi {
     pub last_sadl_time: time::Tm,
 
     pub blade: f32,
-    
+
     // Forward camera controls
     pub f_pan: f32,
     pub f_panning: f32,
@@ -72,7 +72,7 @@ pub struct NavigationUi {
 
     pub command: String,
     pub command_mode: bool,
-    
+
     socket: UdpSocket,
 }
 
@@ -80,7 +80,7 @@ impl NavigationUi {
     pub fn new(socket: UdpSocket) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
-            
+
             mission_time: MissionTime::Paused(time::Duration::zero()),
 
             pitch_roll_heading: None,
@@ -91,7 +91,7 @@ impl NavigationUi {
             speed: None,
             altitude: None,
             angle: None,
-            
+
             l_rpm: 0.0,
             r_rpm: 0.0,
             max_rpm: 100.0,
@@ -100,9 +100,9 @@ impl NavigationUi {
 
             sadl: 0.0,
             last_sadl_time: time::now(),
-            
+
             blade: 0.0,
-            
+
             f_pan: 90.0,
             f_panning: 0.0,
             last_f_pan_time: time::now(),
@@ -123,29 +123,29 @@ impl NavigationUi {
         self.f_pan += self.f_panning*180.0*dt; // 180 degrees per second
         self.f_tilt += self.f_tilting*90.0*dt; // 90 degrees per second
     }
-    
+
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
         use graphics::*;
-    
+
         // Draw the background.
         Background::new().color(self.bg_color).draw(ui, gl);
-        
+
         let time_now = time::now();
-        
+
         // Local time
         Label::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
             .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 10.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(LOCAL_TIME, ui);
-        
+
         // UTC time
         Label::new(format!("{}", time_now.to_utc().strftime("%Z  %x  %X").unwrap()).as_str())
             .xy((-ui.win_w / 2.0) + 104.0, (ui.win_h / 2.0) - 30.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(UTC_TIME, ui);
-        
+
         // Mission time label
         let mission_time =
             match self.mission_time {
@@ -157,7 +157,7 @@ impl NavigationUi {
         let total_hours = mission_time.num_hours();
         let total_minutes = mission_time.num_minutes();
         let total_seconds = mission_time.num_seconds();
-        
+
         let days = total_days;
         let hours = total_hours - total_days*24;
         let minutes = total_minutes - total_hours*60;
@@ -167,7 +167,7 @@ impl NavigationUi {
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(MISSION_TIME_LABEL, ui);
-        
+
         // Mission start/pause button
         let mission_start_text =
             match self.mission_time {
@@ -191,7 +191,7 @@ impl NavigationUi {
                 };
             })
             .set(MISSION_START_BUTTON, ui);
-        
+
         // Mission reset button
         Button::new()
             .dimensions(100.0, 30.0)
@@ -203,14 +203,14 @@ impl NavigationUi {
                 self.mission_time = MissionTime::Paused(time::Duration::zero());
             })
             .set(MISSION_RESET_BUTTON, ui);
-        
+
         // Time delay
         Label::new("Time Delay: 0s")
             .xy((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // IMU section
 
@@ -273,7 +273,7 @@ impl NavigationUi {
             .font_size(16)
             .color(imu_color)
             .set(IMU_HEADING_VALUE, ui);
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////
         // GPS section
 
@@ -282,7 +282,7 @@ impl NavigationUi {
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(GPS_LABEL, ui);
-        
+
         // Latitude label
         let (latitude, latitude_color) =
             match self.latitude {
@@ -310,7 +310,7 @@ impl NavigationUi {
             .font_size(16)
             .color(longitude_color)
             .set(LONGITUDE_LABEL, ui);
-        
+
         // Speed label
         let (speed, speed_color) =
             match self.speed {
@@ -367,7 +367,7 @@ impl NavigationUi {
                 self.try_update_l_rpm(new_rpm);
             })
             .set(L_RPM_SLIDER, ui);
-        
+
         // Right RPM slider
         Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
             .dimensions(150.0, 30.0)
@@ -380,7 +380,7 @@ impl NavigationUi {
                 self.try_update_r_rpm(new_rpm);
             })
             .set(R_RPM_SLIDER, ui);
-        
+
         // Stop button
         Button::new()
             .dimensions(100.0, 30.0)
@@ -396,7 +396,6 @@ impl NavigationUi {
                 self.send_brake();
             })
             .set(STOP_BUTTON, ui);
-
 
         // Motor speed slider
         Slider::new(self.motor_speed, 0.0, 1.0)
@@ -423,7 +422,7 @@ impl NavigationUi {
                 self.try_update_f_pan(new_pan);
             })
             .set(F_PAN_SLIDER, ui);
-        
+
         // Camera tilt slider
         Slider::new(self.f_tilt, 90.0, 180.0)
             .dimensions(150.0, 30.0)
@@ -438,7 +437,7 @@ impl NavigationUi {
             .set(F_TILT_SLIDER, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // SADL 
+        // SADL
         Label::new("SADL")
             .xy(50.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
             .font_size(22)
@@ -492,7 +491,7 @@ impl NavigationUi {
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(COMMAND_LABEL, ui);
-        
+
         let mut should_send_command = false;
         TextBox::new(&mut self.command)
             .enabled(self.command_mode)
@@ -537,7 +536,7 @@ impl NavigationUi {
         // Draw our UI!
         ui.draw(c, gl);
     }
-    
+
     pub fn handle_packet(&mut self, packet: String) {
         println!("{}", packet);
 
@@ -545,7 +544,7 @@ impl NavigationUi {
 
         for packet in packets {
             let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
-            
+
             match packet_parts[0].as_str() {
                 "GPS" => {
                     if packet_parts.len() == 6 {
@@ -582,13 +581,19 @@ impl NavigationUi {
             }
         }
     }
-    
+
     pub fn on_key_pressed<'a>(&mut self, key: input::Key) {
         use piston::input::Key::*;
 
         if self.command_mode {
             return;
         }
+
+        // here need to add key for rpm values, need stuff between 0 and 100 - 10/29 CP
+        // thought was to have '+' and '-' keys control a percentage slider, where
+        // the l_rpm and r_rpm get multiplied by this perecentage (1 for 100%, 0.5 for 50%)
+        // so that controls stay the same, only get multiplied by this variable
+
 
         match key {
             Space => {
@@ -673,7 +678,7 @@ impl NavigationUi {
             _ => { },
         }
     }
-    
+
     pub fn on_key_released<'a>(&mut self, key: input::Key) {
         use piston::input::Key::*;
 
@@ -710,7 +715,7 @@ impl NavigationUi {
             _ => { },
         }
     }
-    
+
     pub fn try_update_l_rpm(&mut self, l_rpm: f32) -> io::Result<usize> {
         if (l_rpm - self.l_rpm).abs() > 5.0 {
             self.l_rpm = l_rpm;
@@ -719,7 +724,7 @@ impl NavigationUi {
             Ok(0)
         }
     }
-    
+
     pub fn try_update_r_rpm(&mut self, r_rpm: f32) -> io::Result<usize> {
         if (r_rpm - self.r_rpm).abs() > 5.0 {
             self.r_rpm = r_rpm;
@@ -728,7 +733,7 @@ impl NavigationUi {
             Ok(0)
         }
     }
-    
+
     pub fn try_update_f_pan(&mut self, f_pan: f32) -> io::Result<usize> {
         if (f_pan - self.f_pan).abs() > 5.0 || f_pan == 0.0 || f_pan == 180.0 {
             self.f_pan = f_pan;
@@ -737,7 +742,7 @@ impl NavigationUi {
             Ok(0)
         }
     }
-    
+
     pub fn try_update_f_tilt(&mut self, f_tilt: f32) -> io::Result<usize> {
         if (f_tilt - self.f_tilt).abs() > 5.0 || f_tilt == 90.0 || f_tilt == 180.0 {
             self.f_tilt = f_tilt;
@@ -759,17 +764,17 @@ impl NavigationUi {
     pub fn send_brake(&self) -> io::Result<usize> {
         self.socket.send_to(&[b'G'], ("10.10.155.165", 30001))
     }
-    
+
     pub fn send_l_rpm(&self) -> io::Result<usize> {
         let packet = format!("A{}", self.l_rpm as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
-    
+
     pub fn send_r_rpm(&self) -> io::Result<usize> {
         let packet = format!("B{}", self.r_rpm as i32);
         self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
     }
-    
+
     pub fn send_f_pan(&mut self) -> io::Result<usize> {
         let time_since = (time::now() - self.last_f_pan_time).num_milliseconds();
         if time_since >= 500 {
@@ -780,7 +785,7 @@ impl NavigationUi {
             Ok(0)
         }
     }
-    
+
     pub fn send_f_tilt(&mut self) -> io::Result<usize> {
         let time_since = (time::now() - self.last_f_tilt_time).num_milliseconds();
         if time_since >= 500 {

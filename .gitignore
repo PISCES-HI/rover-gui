@@ -3,3 +3,4 @@ Cargo.lock
 *.dll
 */target/*
 */data/*
+*/mission_data/*
