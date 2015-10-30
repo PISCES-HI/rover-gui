@@ -628,6 +628,12 @@ impl NavigationUi {
                 self.send_l_rpm();
                 self.send_r_rpm();
             },
+            Minus => {
+                self.motor_speed -= 0.1;
+            },
+            Equals => {
+                self.motor_speed += 0.1;
+            },
             D1 => {
                 // SADL up
                 self.sadl = 100.0;

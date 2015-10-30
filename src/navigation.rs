@@ -94,9 +94,9 @@ fn main() {
     let (video0_texture, video0_image) =
         start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
     let (video1_texture, video1_image) =
-        start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", None);
+        start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", Some(format!("mission_data/{}/reverse.mkv", mission_folder)));
     let (video2_texture, video2_image) =
-        start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
+        start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some(format!("mission_data/{}/hazard.mkv", mission_folder)));
 
     let mut vid_textures = [video0_texture, video1_texture, video2_texture];
     let mut vid_displays = [0, 1, 2];
