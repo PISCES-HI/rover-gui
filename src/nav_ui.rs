@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-
 use std::io;
 use std::net::UdpSocket;
 use std::ops::DerefMut;
+use std::sync::mpsc::Sender;
 
 use conrod::{
     Background,
@@ -28,6 +28,7 @@ use piston::input;
 use time;
 
 use imu;
+use video_stream::RecordMsg;
 
 enum MissionTime {
     Paused(time::Duration),
@@ -74,10 +75,13 @@ pub struct NavigationUi {
     pub command_mode: bool,
 
     socket: UdpSocket,
+    vid0_t: Sender<RecordMsg>,
+    vid1_t: Sender<RecordMsg>,
+    vid2_t: Sender<RecordMsg>,
 }
 
 impl NavigationUi {
-    pub fn new(socket: UdpSocket) -> NavigationUi {
+    pub fn new(socket: UdpSocket, vid0_t: Sender<RecordMsg>, vid1_t: Sender<RecordMsg>, vid2_t: Sender<RecordMsg>) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
 
@@ -114,6 +118,9 @@ impl NavigationUi {
             command_mode: false,
 
             socket: socket,
+            vid0_t: vid0_t,
+            vid1_t: vid1_t,
+            vid2_t: vid2_t,
         }
     }
 
@@ -184,9 +191,15 @@ impl NavigationUi {
                 match self.mission_time {
                     MissionTime::Paused(current_time) => {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
+
+                        //self.vid0_t.send(RecordMsg::Start());
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
+
+                        self.vid0_t.send(RecordMsg::Stop);
+                        self.vid1_t.send(RecordMsg::Stop);
+                        self.vid2_t.send(RecordMsg::Stop);
                     },
                 };
             })
@@ -538,7 +551,7 @@ impl NavigationUi {
     }
 
     pub fn handle_packet(&mut self, packet: String) {
-        println!("{}", packet);
+        //println!("{}", packet);
 
         let packets = packet.split("|");
 
@@ -577,7 +590,7 @@ impl NavigationUi {
                     self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
                     self.heading.set_angle(heading);
                 },
-                _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
+                _ => { /*println!("WARNING: Unknown packet ID: {}", packet_parts[0])*/ },
             }
         }
     }

@@ -22,7 +22,14 @@ use image::RgbaImage;
 
 use opengl_graphics::Texture;
 
-pub fn start_video_stream(path: &str, out_path: Option<String>) -> (Texture, Arc<Mutex<RgbaImage>>) {
+pub enum RecordMsg {
+    Start(String),
+    Stop,
+}
+
+pub fn start_video_stream(record_r: Receiver<RecordMsg>,
+                          path: &str,
+                          out_path: Option<String>) -> (Texture, Arc<Mutex<RgbaImage>>) {
     let rgba_img = RgbaImage::new(512, 512);
     let video_texture = Texture::from_image(&rgba_img);
     let rgba_img = Arc::new(Mutex::new(rgba_img));
@@ -51,9 +58,11 @@ pub fn start_video_stream(path: &str, out_path: Option<String>) -> (Texture, Arc
                                                     scaling::flag::BILINEAR).unwrap();
 
             // Open recording stream
-            let (video_t, video_r) = channel();
+            let mut video_t: Option<Sender<RecordPacket>> = None;
             if let Some(ref out_path) = out_path {
-                start_video_recording(&decoder, video_r, out_path.clone());
+                let (t, r) = channel();
+                start_video_recording(&decoder, r, out_path.clone());
+                video_t = Some(t);
             }
 
             /////////////////////////////////////////////////////
@@ -72,6 +81,9 @@ pub fn start_video_stream(path: &str, out_path: Option<String>) -> (Texture, Arc
                 }
                 
                 //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
+                if output_frame.data().len() != 1 {
+                    println!("lines: {}", output_frame.data().len());
+                }
                 for line in output_frame.data().iter() {
                     let mut rgba_img = thread_rgba_img.lock().unwrap();
                 
@@ -86,8 +98,27 @@ pub fn start_video_stream(path: &str, out_path: Option<String>) -> (Texture, Arc
                     }
                 }
 
-                if out_path.is_some() {
-                    video_t.send((now, input_frame));
+                if let Ok(msg) = record_r.try_recv() {
+                    match msg {
+                        RecordMsg::Start(out_path) => {
+                            // Open recording stream
+                            if video_t.is_none() {
+                                let (t, r) = channel();
+                                start_video_recording(&decoder, r, out_path);
+                                video_t = Some(t);
+                            }
+                        },
+                        RecordMsg::Stop => {
+                            if let Some(ref video_t) = video_t {
+                                video_t.send(RecordPacket::Close);
+                            }
+                            video_t = None;
+                        },
+                    }
+                }
+
+                if let Some(ref video_t) = video_t {
+                    video_t.send(RecordPacket::Packet(now, input_frame));
                 }
             }
         }).unwrap();
@@ -95,8 +126,13 @@ pub fn start_video_stream(path: &str, out_path: Option<String>) -> (Texture, Arc
     (video_texture, rgba_img)
 }
 
-pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
-                             packets: Receiver<(i64, ffmpeg::frame::Video)>,
+enum RecordPacket {
+    Packet(i64, ffmpeg::frame::Video),
+    Close,
+}
+
+fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
+                             msgs: Receiver<RecordPacket>,
                              out_path: String) {
     let decoder_width = decoder.width();
     let decoder_height = decoder.height();
@@ -144,20 +180,30 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             /////////////////////////////////////////////////////
             // Process streams
             
-            while let Ok((now, input_frame)) = packets.recv() {
-                // Now encode the recording packets
-                if let Err(e) = rec_converter.run(&input_frame, &mut rec_frame) {
-                    println!("WARNING: video software converter error: {}", e);
-                }
-                rec_frame.set_pts(Some((now - start) / sleep));
+            while let Ok(msg) = msgs.recv() {
+                match msg {
+                    RecordPacket::Packet(now, input_frame) => {
+                        // Now encode the recording packets
+                        if let Err(e) = rec_converter.run(&input_frame, &mut rec_frame) {
+                            println!("WARNING: video software converter error: {}", e);
+                        }
+                        rec_frame.set_pts(Some((now - start) / sleep));
 
-                //println!("encoding...");
-                if let Ok(_) = rec_video.encode(&rec_frame, &mut rec_packet) {
-                    rec_packet.set_stream(0);
-                    rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
-                    rec_packet.write_interleaved(&mut rec_format);
-                } else {
-                    println!("WARNING: Failed to write video frame");
+                        //println!("encoding...");
+                        match rec_video.encode(&rec_frame, &mut rec_packet) {
+                            Ok(_) => {
+                                rec_packet.set_stream(0);
+                                rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
+                                rec_packet.write_interleaved(&mut rec_format);
+                            },
+                            Err(e) => {
+                                println!("WARNING: Failed to write video frame: {}", e);
+                            },
+                        }
+                    },
+                    RecordPacket::Close => {
+                        break;
+                    },
                 }
             }
 
@@ -168,6 +214,7 @@ pub fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             }
 
             rec_format.write_trailer().unwrap();
+            println!("Finished writing trailer");
         }).unwrap();
 }
 

@@ -31,7 +31,7 @@ use sdl2::controller;
 use sdl2_window::Sdl2Window;
 
 use nav_ui::NavigationUi;
-use video_stream::{init_ffmpeg, start_video_stream};
+use video_stream::{init_ffmpeg, start_video_stream, RecordMsg};
 
 mod line_graph;
 mod nav_ui;
@@ -79,24 +79,38 @@ fn main() {
                 }
             }
         }).unwrap();
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
+    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
+
+    let (vid0_t, vid0_r) = channel();
+    let (vid1_t, vid1_r) = channel();
+    let (vid2_t, vid2_r) = channel();
     
-    let mut nav_ui = NavigationUi::new(socket);
+    let (video0_texture, video0_image) =
+        start_video_stream(vid0_r,
+                           "rtsp://10.10.155.166/axis-media/media.amp",
+                           Some(format!("mission_data/{}/forward.mkv", mission_folder)));
+    let (video1_texture, video1_image) =
+        start_video_stream(vid1_r,
+                           "rtsp://10.10.155.167/axis-media/media.amp",
+                           Some(format!("mission_data/{}/reverse.mkv", mission_folder)));
+    let (video2_texture, video2_image) =
+        start_video_stream(vid2_r,
+                           "rtsp://root:pisces@10.10.155.168/axis-media/media.amp",
+                           Some(format!("mission_data/{}/hazard.mkv", mission_folder)));
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    
+    let mut nav_ui = NavigationUi::new(socket, vid0_t, vid1_t, vid2_t);
     nav_ui.send_l_rpm();
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
     nav_ui.send_f_tilt();
 
     ////////////////////////////////////////////////////////////////////////////////////////
-
-    let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
-    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
-    
-    let (video0_texture, video0_image) =
-        start_video_stream("rtsp://10.10.155.166/axis-media/media.amp", Some(format!("mission_data/{}/forward.mkv", mission_folder)));
-    let (video1_texture, video1_image) =
-        start_video_stream("rtsp://10.10.155.167/axis-media/media.amp", Some(format!("mission_data/{}/reverse.mkv", mission_folder)));
-    let (video2_texture, video2_image) =
-        start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", Some(format!("mission_data/{}/hazard.mkv", mission_folder)));
 
     let mut vid_textures = [video0_texture, video1_texture, video2_texture];
     let mut vid_displays = [0, 1, 2];
