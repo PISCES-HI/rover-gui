@@ -78,10 +78,15 @@ pub struct NavigationUi {
     vid0_t: Sender<RecordMsg>,
     vid1_t: Sender<RecordMsg>,
     vid2_t: Sender<RecordMsg>,
+    mission_folder: String,
 }
 
 impl NavigationUi {
-    pub fn new(socket: UdpSocket, vid0_t: Sender<RecordMsg>, vid1_t: Sender<RecordMsg>, vid2_t: Sender<RecordMsg>) -> NavigationUi {
+    pub fn new(socket: UdpSocket,
+               vid0_t: Sender<RecordMsg>,
+               vid1_t: Sender<RecordMsg>,
+               vid2_t: Sender<RecordMsg>,
+               mission_folder: String) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
 
@@ -121,6 +126,7 @@ impl NavigationUi {
             vid0_t: vid0_t,
             vid1_t: vid1_t,
             vid2_t: vid2_t,
+            mission_folder: mission_folder,
         }
     }
 
@@ -192,7 +198,9 @@ impl NavigationUi {
                     MissionTime::Paused(current_time) => {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
 
-                        //self.vid0_t.send(RecordMsg::Start());
+                        self.vid0_t.send(RecordMsg::Start(format!("mission_data/{}/forward.mkv", self.mission_folder)));
+                        self.vid1_t.send(RecordMsg::Start(format!("mission_data/{}/reverse.mkv", self.mission_folder)));
+                        self.vid2_t.send(RecordMsg::Start(format!("mission_data/{}/hazard.mkv", self.mission_folder)));
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);

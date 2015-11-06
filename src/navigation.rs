@@ -90,21 +90,15 @@ fn main() {
     let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        start_video_stream(vid0_r,
-                           "rtsp://10.10.155.166/axis-media/media.amp",
-                           Some(format!("mission_data/{}/forward.mkv", mission_folder)));
+        start_video_stream(vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
     let (video1_texture, video1_image) =
-        start_video_stream(vid1_r,
-                           "rtsp://10.10.155.167/axis-media/media.amp",
-                           Some(format!("mission_data/{}/reverse.mkv", mission_folder)));
+        start_video_stream(vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
     let (video2_texture, video2_image) =
-        start_video_stream(vid2_r,
-                           "rtsp://root:pisces@10.10.155.168/axis-media/media.amp",
-                           Some(format!("mission_data/{}/hazard.mkv", mission_folder)));
+        start_video_stream(vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
-    let mut nav_ui = NavigationUi::new(socket, vid0_t, vid1_t, vid2_t);
+    let mut nav_ui = NavigationUi::new(socket, vid0_t, vid1_t, vid2_t, mission_folder);
     nav_ui.send_l_rpm();
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();

@@ -28,8 +28,7 @@ pub enum RecordMsg {
 }
 
 pub fn start_video_stream(record_r: Receiver<RecordMsg>,
-                          path: &str,
-                          out_path: Option<String>) -> (Texture, Arc<Mutex<RgbaImage>>) {
+                          path: &str) -> (Texture, Arc<Mutex<RgbaImage>>) {
     let rgba_img = RgbaImage::new(512, 512);
     let video_texture = Texture::from_image(&rgba_img);
     let rgba_img = Arc::new(Mutex::new(rgba_img));
@@ -59,11 +58,6 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
 
             // Open recording stream
             let mut video_t: Option<Sender<RecordPacket>> = None;
-            if let Some(ref out_path) = out_path {
-                let (t, r) = channel();
-                start_video_recording(&decoder, r, out_path.clone());
-                video_t = Some(t);
-            }
 
             /////////////////////////////////////////////////////
             // Process stream
