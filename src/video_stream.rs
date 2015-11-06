@@ -61,9 +61,11 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
 
             /////////////////////////////////////////////////////
             // Process stream
+
+            let start = ffmpeg::time::relative() as i64;
             
             for (stream, packet) in format_context.packets() {
-                let now = ffmpeg::time::relative() as i64;
+                let now = (ffmpeg::time::relative() as i64) - start;
 
                 let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
                 let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
@@ -168,7 +170,6 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             let mut rec_packet = ffmpeg::Packet::empty();
             let mut rec_frame  = ffmpeg::frame::Video::empty();
 
-            let start = ffmpeg::time::relative() as i64;
             let sleep = 1_000_000/fps;
 
             /////////////////////////////////////////////////////
@@ -176,12 +177,12 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             
             while let Ok(msg) = msgs.recv() {
                 match msg {
-                    RecordPacket::Packet(now, input_frame) => {
+                    RecordPacket::Packet(time, input_frame) => {
                         // Now encode the recording packets
                         if let Err(e) = rec_converter.run(&input_frame, &mut rec_frame) {
                             println!("WARNING: video software converter error: {}", e);
                         }
-                        rec_frame.set_pts(Some((now - start) / sleep));
+                        rec_frame.set_pts(Some(time / sleep));
 
                         //println!("encoding...");
                         match rec_video.encode(&rec_frame, &mut rec_packet) {
