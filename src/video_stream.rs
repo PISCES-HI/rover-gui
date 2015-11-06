@@ -39,6 +39,8 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
+            let fps: i64 = 10;
+
             let mut format_context = format::input(&path).unwrap();
             //format::dump(&format_context, 0, Some(path.as_str()));
 
@@ -63,9 +65,12 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
             // Process stream
 
             let start = ffmpeg::time::relative() as i64;
+            let sleep = 1_000_000/fps;
             
             for (stream, packet) in format_context.packets() {
-                let now = (ffmpeg::time::relative() as i64) - start;
+                let pts = packet.pts()
+                                .unwrap_or(((ffmpeg::time::relative() as i64) - start)/sleep);
+                let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
 
                 let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
                 let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
@@ -114,7 +119,7 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                 }
 
                 if let Some(ref video_t) = video_t {
-                    video_t.send(RecordPacket::Packet(now, input_frame));
+                    video_t.send(RecordPacket::Packet(pts, input_frame));
                 }
             }
         }).unwrap();
@@ -128,8 +133,8 @@ enum RecordPacket {
 }
 
 fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
-                             msgs: Receiver<RecordPacket>,
-                             out_path: String) {
+                         msgs: Receiver<RecordPacket>,
+                         out_path: String) {
     let decoder_width = decoder.width();
     let decoder_height = decoder.height();
     let decoder_format = decoder.format();
@@ -151,7 +156,7 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                     codec.set_width(decoder_width);
                     codec.set_height(decoder_height);
                     codec.set_format(ffmpeg::format::Pixel::YUV420P);
-                    codec.set_time_base((1, fps as i32));
+                    codec.set_time_base((1, 1_000));
                     codec.set_flags(ffmpeg::codec::flag::GLOBAL_HEADER);
 
                     stream.set_time_base((1, 1_000));
@@ -170,19 +175,17 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             let mut rec_packet = ffmpeg::Packet::empty();
             let mut rec_frame  = ffmpeg::frame::Video::empty();
 
-            let sleep = 1_000_000/fps;
-
             /////////////////////////////////////////////////////
             // Process streams
             
             while let Ok(msg) = msgs.recv() {
                 match msg {
-                    RecordPacket::Packet(time, input_frame) => {
+                    RecordPacket::Packet(pts, input_frame) => {
                         // Now encode the recording packets
                         if let Err(e) = rec_converter.run(&input_frame, &mut rec_frame) {
                             println!("WARNING: video software converter error: {}", e);
                         }
-                        rec_frame.set_pts(Some(time / sleep));
+                        rec_frame.set_pts(Some(pts));
 
                         //println!("encoding...");
                         match rec_video.encode(&rec_frame, &mut rec_packet) {
