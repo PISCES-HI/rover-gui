@@ -42,6 +42,7 @@ pub struct NavigationUi {
 
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
+    roll: imu::Roll,
     heading: imu::Heading,
 
     // GPS
@@ -93,6 +94,7 @@ impl NavigationUi {
             mission_time: MissionTime::Paused(time::Duration::zero()),
 
             pitch_roll_heading: None,
+            roll: imu::Roll::new(),
             heading: imu::Heading::new(),
 
             latitude: None,
@@ -272,6 +274,8 @@ impl NavigationUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_ROLL_LABEL, ui);
+
+        self.roll.draw(c.trans(170.0, 215.0), gl);
 
         Label::new(roll.as_str())
             .xy((-ui.win_w / 2.0) + 250.0, (ui.win_h / 2.0) - 350.0)
@@ -596,6 +600,7 @@ impl NavigationUi {
                     }
                     heading = 360.0 - heading;
                     self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                    self.roll.set_angle(roll);
                     self.heading.set_angle(heading);
                 },
                 _ => { /*println!("WARNING: Unknown packet ID: {}", packet_parts[0])*/ },
