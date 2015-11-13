@@ -39,15 +39,15 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let fps: i64 = 10;
+            let fps: i64 = 100_000;
 
             let mut format_context = format::input(&path).unwrap();
             //format::dump(&format_context, 0, Some(path.as_str()));
 
-            let stream_codec =
+            let (start_time, stream_codec) =
                 format_context.streams()
                               .filter(|stream| stream.codec().medium() == media::Type::Video)
-                              .map(|stream| stream.codec())
+                              .map(|stream| (stream.start_time(), stream.codec()))
                               .next().expect("No video streams in stream");
             let video_codec = codec::decoder::find(stream_codec.id()).unwrap();
             
@@ -64,14 +64,13 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
             /////////////////////////////////////////////////////
             // Process stream
 
-            let start = ffmpeg::time::relative() as i64;
+            let mut start = ffmpeg::time::relative() as i64;
             let sleep = 1_000_000/fps;
+            //let start = start_time;
+            
+            let mut rec_start_pts = 0;
             
             for (stream, packet) in format_context.packets() {
-                let pts = packet.pts()
-                                .unwrap_or(((ffmpeg::time::relative() as i64) - start)/sleep);
-                let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
-
                 let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
                 let mut output_frame = frame::Video::new(Pixel::RGBA, 512, 512);
 
@@ -104,6 +103,8 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                         RecordMsg::Start(out_path) => {
                             // Open recording stream
                             if video_t.is_none() {
+                                rec_start_pts = packet.pts().unwrap();
+                                start = ffmpeg::time::relative() as i64;
                                 let (t, r) = channel();
                                 start_video_recording(&decoder, r, out_path);
                                 video_t = Some(t);
@@ -119,6 +120,18 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                 }
 
                 if let Some(ref video_t) = video_t {
+                    /*let pts = packet.pts()
+                                    .unwrap_or(((ffmpeg::time::relative() as i64) - start)/sleep);*/
+                    let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
+                    //let pts = (input_frame.timestamp().unwrap()-start_time)/sleep;
+                    /*let pts = packet.pts().unwrap();
+                    let pts =
+                        if pts > rec_start_pts {
+                            pts - rec_start_pts
+                        } else {
+                            0
+                        };*/
+                    println!("PTS {}, {:?}, {}", pts, packet.pts().unwrap()/10_000, packet.duration());
                     video_t.send(RecordPacket::Packet(pts, input_frame));
                 }
             }
@@ -142,7 +155,7 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let fps: i64 = 10;
+            let fps: i64 = 100_000;
 
             /////////////////////////////////////////////////////
             // Open recording stream
@@ -187,7 +200,6 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                         }
                         rec_frame.set_pts(Some(pts));
 
-                        //println!("encoding...");
                         match rec_video.encode(&rec_frame, &mut rec_packet) {
                             Ok(_) => {
                                 rec_packet.set_stream(0);
