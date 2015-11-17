@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io;
 use std::net::UdpSocket;
 use std::ops::DerefMut;
@@ -80,6 +80,8 @@ pub struct NavigationUi {
     vid1_t: Sender<RecordMsg>,
     vid2_t: Sender<RecordMsg>,
     mission_folder: String,
+
+    out_queue: VecDeque<(time::Tm, time::Duration, Vec<u8>, (String, u16))>, // Outbound packet queue
 }
 
 impl NavigationUi {
@@ -129,6 +131,8 @@ impl NavigationUi {
             vid1_t: vid1_t,
             vid2_t: vid2_t,
             mission_folder: mission_folder,
+
+            out_queue: VecDeque::new(),
         }
     }
 
@@ -836,6 +840,21 @@ impl NavigationUi {
     pub fn send_command(&self) -> io::Result<usize> {
         let packet = format!("Z{}", self.command);
         self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+    }
+
+    pub fn send_packet(&mut self, delay: time::Duration, data: Vec<u8>, addr: (String, u16)) {
+        self.out_queue.push_back((time::now(), delay, data, addr));
+    }
+
+    fn flush_out_queue(&mut self) {
+        while !self.out_queue.is_empty() {
+            if time::now()-self.out_queue[0].0 >= self.out_queue[0].1 {
+                let (_, _, data, addr) = self.out_queue.pop_front().unwrap();
+                self.socket.send_to(data.as_slice(), (addr.0.as_str(), addr.1));
+            } else {
+                break;
+            }
+        }
     }
 }
 
