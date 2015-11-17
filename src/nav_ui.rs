@@ -141,6 +141,8 @@ impl NavigationUi {
 
         self.f_pan += self.f_panning*180.0*dt; // 180 degrees per second
         self.f_tilt += self.f_tilting*90.0*dt; // 90 degrees per second
+
+        self.flush_out_queue();
     }
 
     pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
