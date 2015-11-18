@@ -122,16 +122,16 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                 if let Some(ref video_t) = video_t {
                     /*let pts = packet.pts()
                                     .unwrap_or(((ffmpeg::time::relative() as i64) - start)/sleep);*/
-                    let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
+                    //let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
                     //let pts = (input_frame.timestamp().unwrap()-start_time)/sleep;
-                    /*let pts = packet.pts().unwrap();
+                    let pts = packet.pts().unwrap();
                     let pts =
                         if pts > rec_start_pts {
                             pts - rec_start_pts
                         } else {
                             0
-                        };*/
-                    println!("PTS {}, {:?}, {}", pts, packet.pts().unwrap()/10_000, packet.duration());
+                        };
+                    println!("PTS {}, {:?}, {}", pts, packet.pts().unwrap()/10_000, packet.position());
                     video_t.send(RecordPacket::Packet(pts, input_frame));
                 }
             }
@@ -151,11 +151,13 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
     let decoder_width = decoder.width();
     let decoder_height = decoder.height();
     let decoder_format = decoder.format();
+
+    println!("time_base={}", decoder.time_base());
     
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let fps: i64 = 100_000;
+            let fps: i64 = 180_000;
 
             /////////////////////////////////////////////////////
             // Open recording stream
@@ -169,10 +171,10 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                     codec.set_width(decoder_width);
                     codec.set_height(decoder_height);
                     codec.set_format(ffmpeg::format::Pixel::YUV420P);
-                    codec.set_time_base((1, 1_000));
+                    codec.set_time_base((1, fps as i32));
                     codec.set_flags(ffmpeg::codec::flag::GLOBAL_HEADER);
 
-                    stream.set_time_base((1, 1_000));
+                    stream.set_time_base((1, fps as i32));
                     stream.set_rate((fps as i32, 1));
 
                     codec.open_as(ffmpeg::codec::Id::VP9).unwrap()

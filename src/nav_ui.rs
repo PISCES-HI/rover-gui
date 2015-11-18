@@ -211,15 +211,15 @@ impl NavigationUi {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
 
                         self.vid0_t.send(RecordMsg::Start(format!("mission_data/{}/forward.mkv", self.mission_folder)));
-                        self.vid1_t.send(RecordMsg::Start(format!("mission_data/{}/reverse.mkv", self.mission_folder)));
-                        self.vid2_t.send(RecordMsg::Start(format!("mission_data/{}/hazard.mkv", self.mission_folder)));
+                        //self.vid1_t.send(RecordMsg::Start(format!("mission_data/{}/reverse.mkv", self.mission_folder)));
+                        //self.vid2_t.send(RecordMsg::Start(format!("mission_data/{}/hazard.mkv", self.mission_folder)));
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
 
                         self.vid0_t.send(RecordMsg::Stop);
-                        self.vid1_t.send(RecordMsg::Stop);
-                        self.vid2_t.send(RecordMsg::Stop);
+                        //self.vid1_t.send(RecordMsg::Stop);
+                        //self.vid2_t.send(RecordMsg::Stop);
                     },
                 };
             })
