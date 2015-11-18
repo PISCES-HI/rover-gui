@@ -83,6 +83,7 @@ pub struct NavigationUi {
 
     out_queue: VecDeque<(time::Tm, time::Duration, Vec<u8>, (String, u16))>, // Outbound packet queue
     delay: time::Duration,
+    delay_str: String,
 }
 
 impl NavigationUi {
@@ -135,6 +136,7 @@ impl NavigationUi {
 
             out_queue: VecDeque::new(),
             delay: time::Duration::seconds(0),
+            delay_str: "".to_string(),
         }
     }
 
@@ -236,11 +238,27 @@ impl NavigationUi {
             .set(MISSION_RESET_BUTTON, ui);
 
         // Time delay
-        Label::new("Time Delay: 0s")
+        Label::new("Time Delay:")
             .xy((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
+
+        let mut new_delay = false;
+        TextBox::new(&mut self.delay_str)
+            .font_size(16)
+            .dimensions(50.0, 20.0)
+            .xy((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 150.0)
+            .frame(1.0)
+            .frame_color(self.bg_color.invert().plain_contrast())
+            .color(self.bg_color.invert())
+            .react(|s: &mut String| {
+                new_delay = true;
+            })
+            .set(TIME_DELAY_VALUE, ui);
+        if new_delay {
+            self.delay = time::Duration::seconds(self.delay_str.parse().unwrap());
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // IMU section
@@ -865,9 +883,10 @@ const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
 const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
 const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
 const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
+const TIME_DELAY_VALUE: WidgetId = TIME_DELAY + 1;
 
 // IMU section
-const IMU_LABEL: WidgetId = TIME_DELAY + 1;
+const IMU_LABEL: WidgetId = TIME_DELAY_VALUE + 1;
 
 const IMU_PITCH_LABEL: WidgetId = IMU_LABEL + 1;
 const IMU_PITCH_VALUE: WidgetId = IMU_PITCH_LABEL + 1;
