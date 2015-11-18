@@ -82,6 +82,7 @@ pub struct NavigationUi {
     mission_folder: String,
 
     out_queue: VecDeque<(time::Tm, time::Duration, Vec<u8>, (String, u16))>, // Outbound packet queue
+    delay: time::Duration,
 }
 
 impl NavigationUi {
@@ -133,6 +134,7 @@ impl NavigationUi {
             mission_folder: mission_folder,
 
             out_queue: VecDeque::new(),
+            delay: time::Duration::seconds(0),
         }
     }
 
@@ -748,115 +750,111 @@ impl NavigationUi {
         }
     }
 
-    pub fn try_update_l_rpm(&mut self, l_rpm: f32) -> io::Result<usize> {
+    pub fn try_update_l_rpm(&mut self, l_rpm: f32) {
         if (l_rpm - self.l_rpm).abs() > 5.0 {
             self.l_rpm = l_rpm;
-            self.send_l_rpm()
-        } else {
-            Ok(0)
+            self.send_l_rpm();
         }
     }
 
-    pub fn try_update_r_rpm(&mut self, r_rpm: f32) -> io::Result<usize> {
+    pub fn try_update_r_rpm(&mut self, r_rpm: f32) {
         if (r_rpm - self.r_rpm).abs() > 5.0 {
             self.r_rpm = r_rpm;
-            self.send_r_rpm()
-        } else {
-            Ok(0)
+            self.send_r_rpm();
         }
     }
 
-    pub fn try_update_f_pan(&mut self, f_pan: f32) -> io::Result<usize> {
+    pub fn try_update_f_pan(&mut self, f_pan: f32) {
         if (f_pan - self.f_pan).abs() > 5.0 || f_pan == 0.0 || f_pan == 180.0 {
             self.f_pan = f_pan;
-            self.send_f_pan()
-        } else {
-            Ok(0)
+            self.send_f_pan();
         }
     }
 
-    pub fn try_update_f_tilt(&mut self, f_tilt: f32) -> io::Result<usize> {
+    pub fn try_update_f_tilt(&mut self, f_tilt: f32) {
         if (f_tilt - self.f_tilt).abs() > 5.0 || f_tilt == 90.0 || f_tilt == 180.0 {
             self.f_tilt = f_tilt;
-            self.send_f_tilt()
-        } else {
-            Ok(0)
+            self.send_f_tilt();
         }
     }
 
-    pub fn try_update_sadl(&mut self, sadl: f32) -> io::Result<usize> {
+    pub fn try_update_sadl(&mut self, sadl: f32) {
         if sadl != self.sadl && ((sadl - self.sadl).abs() > 5.0 || sadl == 0.0 || sadl == 100.0) {
             self.sadl = sadl;
-            self.send_sadl()
-        } else {
-            Ok(0)
+            self.send_sadl();
         }
     }
 
-    pub fn send_brake(&self) -> io::Result<usize> {
-        self.socket.send_to(&[b'G'], ("10.10.155.165", 30001))
+    pub fn send_brake(&mut self) {
+        let delay = self.delay;
+        self.queue_packet(delay, vec![b'G'], ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_l_rpm(&self) -> io::Result<usize> {
+    pub fn send_l_rpm(&mut self) {
         let packet = format!("A{}", self.l_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+        let delay = self.delay;
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_r_rpm(&self) -> io::Result<usize> {
+    pub fn send_r_rpm(&mut self) {
         let packet = format!("B{}", self.r_rpm as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+        let delay = self.delay;
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_f_pan(&mut self) -> io::Result<usize> {
+    pub fn send_f_pan(&mut self) {
         let time_since = (time::now() - self.last_f_pan_time).num_milliseconds();
         if time_since >= 500 {
             self.last_f_pan_time = time::now();
             let packet = format!("C{}", self.f_pan as i32);
-            self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
-        } else {
-            Ok(0)
+            let delay = self.delay;
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
 
-    pub fn send_f_tilt(&mut self) -> io::Result<usize> {
+    pub fn send_f_tilt(&mut self) {
         let time_since = (time::now() - self.last_f_tilt_time).num_milliseconds();
         if time_since >= 500 {
             self.last_f_tilt_time = time::now();
             let packet = format!("D{}", self.f_tilt as i32);
-            self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
-        } else {
-            Ok(0)
+            let delay = self.delay;
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
 
-    pub fn send_sadl(&self) -> io::Result<usize> {
+    pub fn send_sadl(&mut self) {
         let packet = format!("E{}", self.sadl as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+        let delay = self.delay;
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_blade(&self) -> io::Result<usize> {
+    pub fn send_blade(&mut self) {
         let packet = format!("F{}", self.blade as i32);
-        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+        let delay = self.delay;
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_command(&self) -> io::Result<usize> {
+    pub fn send_command(&mut self) {
         let packet = format!("Z{}", self.command);
-        self.socket.send_to(packet.as_bytes(), ("10.10.155.165", 30001))
+        let delay = self.delay;
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_packet(&mut self, delay: time::Duration, data: Vec<u8>, addr: (String, u16)) {
+    pub fn queue_packet(&mut self, delay: time::Duration, data: Vec<u8>, addr: (String, u16)) {
         self.out_queue.push_back((time::now(), delay, data, addr));
     }
 
-    fn flush_out_queue(&mut self) {
+    fn flush_out_queue(&mut self) -> io::Result<usize> {
+        let mut bytes_written = 0;
         while !self.out_queue.is_empty() {
             if time::now()-self.out_queue[0].0 >= self.out_queue[0].1 {
                 let (_, _, data, addr) = self.out_queue.pop_front().unwrap();
-                self.socket.send_to(data.as_slice(), (addr.0.as_str(), addr.1));
+                bytes_written += try!(self.socket.send_to(data.as_slice(), (addr.0.as_str(), addr.1)));
             } else {
                 break;
             }
         }
+        Ok(bytes_written)
     }
 }
 
