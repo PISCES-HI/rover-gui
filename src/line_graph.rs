@@ -44,7 +44,7 @@ impl LineGraph {
         {
             // Draw upper scale
             let c = c.trans(2.0, 2.0+12.0);
-            Text::colored([1.0; 4], 12).draw(format!("{}", self.y_interval.1).as_str(),
+            Text::new_color([1.0; 4], 12).draw(format!("{}", self.y_interval.1).as_str(),
                                              glyph_cache,
                                              &c.draw_state, c.transform,
                                              gl);
@@ -52,7 +52,7 @@ impl LineGraph {
         {
             // Draw lower scale
             let c = c.trans(2.0, self.size.1 - 2.0);
-            Text::colored([1.0; 4], 12).draw(format!("{}", self.y_interval.0).as_str(),
+            Text::new_color([1.0; 4], 12).draw(format!("{}", self.y_interval.0).as_str(),
                                              glyph_cache,
                                              &c.draw_state, c.transform,
                                              gl);

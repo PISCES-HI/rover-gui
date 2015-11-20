@@ -22,12 +22,12 @@ use image::RgbaImage;
 
 use opengl_graphics::Texture;
 
-pub enum RecordMsg {
+pub enum VideoMsg {
     Start(String),
     Stop,
 }
 
-pub fn start_video_stream(record_r: Receiver<RecordMsg>,
+pub fn start_video_stream(record_r: Receiver<VideoMsg>,
                           path: &str) -> (Texture, Arc<Mutex<RgbaImage>>) {
     let rgba_img = RgbaImage::new(512, 512);
     let video_texture = Texture::from_image(&rgba_img);
@@ -39,7 +39,7 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let fps: i64 = 100_000;
+            let fps: i64 = 10;
 
             let mut format_context = format::input(&path).unwrap();
             //format::dump(&format_context, 0, Some(path.as_str()));
@@ -66,7 +66,6 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
 
             let mut start = ffmpeg::time::relative() as i64;
             let sleep = 1_000_000/fps;
-            //let start = start_time;
             
             let mut rec_start_pts = 0;
             
@@ -80,27 +79,21 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                     println!("WARNING: video software scaling error: {}", e);
                 }
                 
-                //let mut buf: Vec<u8> = Vec::with_capacity(1048576);
-                if output_frame.data().len() != 1 {
-                    println!("lines: {}", output_frame.data().len());
-                }
-                for line in output_frame.data().iter() {
+                // Copy frame data to the rgba_img
+                {
+                    let frame_data = output_frame.data(0);
                     let mut rgba_img = thread_rgba_img.lock().unwrap();
-                
-                    //buf.reserve(line.len());
                     unsafe {
-                        //let buf_len = buf.len();
-                        //buf.set_len(buf_len + line.len());
-                        let src: *const u8 = mem::transmute(line.get(0));
-                        //let dst: *mut u8 = std::mem::transmute(buf.get_mut(buf_len));
+                        let src: *const u8 = mem::transmute(frame_data.get(0));
                         let dst = rgba_img.as_mut_ptr();
-                        ptr::copy(src, dst, line.len());
+                        ptr::copy(src, dst, frame_data.len());
                     }
                 }
 
+                // Check for messages
                 if let Ok(msg) = record_r.try_recv() {
                     match msg {
-                        RecordMsg::Start(out_path) => {
+                        VideoMsg::Start(out_path) => {
                             // Open recording stream
                             if video_t.is_none() {
                                 rec_start_pts = packet.pts().unwrap();
@@ -110,7 +103,7 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                                 video_t = Some(t);
                             }
                         },
-                        RecordMsg::Stop => {
+                        VideoMsg::Stop => {
                             if let Some(ref video_t) = video_t {
                                 video_t.send(RecordPacket::Close);
                             }
@@ -122,15 +115,15 @@ pub fn start_video_stream(record_r: Receiver<RecordMsg>,
                 if let Some(ref video_t) = video_t {
                     /*let pts = packet.pts()
                                     .unwrap_or(((ffmpeg::time::relative() as i64) - start)/sleep);*/
-                    //let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
+                    let pts = ((ffmpeg::time::relative() as i64) - start)/sleep;
                     //let pts = (input_frame.timestamp().unwrap()-start_time)/sleep;
-                    let pts = packet.pts().unwrap();
+                    /*let pts = packet.pts().unwrap();
                     let pts =
                         if pts > rec_start_pts {
                             pts - rec_start_pts
                         } else {
                             0
-                        };
+                        };*/
                     println!("PTS {}, {:?}, {}", pts, packet.pts().unwrap()/10_000, packet.position());
                     video_t.send(RecordPacket::Packet(pts, input_frame));
                 }
@@ -157,7 +150,7 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
     thread::Builder::new()
         .name("video_packet_in".to_string())
         .spawn(move || {
-            let fps: i64 = 180_000;
+            let fps: i64 = 10;
 
             /////////////////////////////////////////////////////
             // Open recording stream
@@ -165,19 +158,21 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
             let mut rec_format = ffmpeg::format::output(&format!("{}", out_path)).unwrap();
 
             let mut rec_video = {
-                    let mut stream = rec_format.add_stream(ffmpeg::codec::Id::VP9).unwrap();
+                    let mut stream = rec_format.add_stream(ffmpeg::codec::Id::MPEG4).unwrap();
                     let mut codec  = stream.codec().encoder().video().unwrap();
 
                     codec.set_width(decoder_width);
                     codec.set_height(decoder_height);
                     codec.set_format(ffmpeg::format::Pixel::YUV420P);
-                    codec.set_time_base((1, fps as i32));
+                    //codec.set_time_base((1, fps as i32));
+                    codec.set_time_base((1, 1000));
                     codec.set_flags(ffmpeg::codec::flag::GLOBAL_HEADER);
 
-                    stream.set_time_base((1, fps as i32));
-                    stream.set_rate((fps as i32, 1));
+                    stream.set_time_base((1, 1000));
+                    //stream.set_time_base((1, fps as i32));
+                    //stream.set_rate((fps as i32, 1));
 
-                    codec.open_as(ffmpeg::codec::Id::VP9).unwrap()
+                    codec.open_as(ffmpeg::codec::Id::MPEG4).unwrap()
             };
 
             let mut rec_converter =
@@ -205,7 +200,7 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
                         match rec_video.encode(&rec_frame, &mut rec_packet) {
                             Ok(_) => {
                                 rec_packet.set_stream(0);
-                                rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
+                                rec_packet.rescale_ts((1, 10), (1, 17500));
                                 rec_packet.write_interleaved(&mut rec_format);
                             },
                             Err(e) => {
@@ -221,7 +216,7 @@ fn start_video_recording(decoder: &ffmpeg::codec::decoder::Video,
 
             while let Ok(true) = rec_video.flush(&mut rec_packet) {
                 rec_packet.set_stream(0);
-                rec_packet.rescale_ts((1, fps as i32), (1, 1_000));
+                rec_packet.rescale_ts((1, 10), (1, 17500));
                 rec_packet.write_interleaved(&mut rec_format);
             }
 

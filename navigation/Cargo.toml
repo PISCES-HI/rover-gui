@@ -9,18 +9,17 @@ name="navigation"
 path="../src/navigation.rs"
 
 [dependencies.ffmpeg]
-#git = "https://github.com/meh/rust-ffmpeg"
-git = "https://github.com/tedsta/rust-ffmpeg"
+git = "https://github.com/meh/rust-ffmpeg"
+#git = "https://github.com/tedsta/rust-ffmpeg"
 features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
 default-features = false
 
 [dependencies]
 
 time = "0.1.*"
-sdl2 = "0.5"
-pistoncore-sdl2_window = "0.4.0"
-piston = "0.3.0"
-piston2d-graphics = "0.4.0"
-piston2d-opengl_graphics = "0.4.0"
-image = "0.3.11"
-conrod = "0.5.0"
+pistoncore-sdl2_window = "0.18.0"
+piston = "0.15.1"
+piston2d-graphics = "0.11.0"
+piston2d-opengl_graphics = "0.19.0"
+image = "0.5.1"
+conrod = "0.22.0"

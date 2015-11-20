@@ -28,7 +28,7 @@ use piston::input;
 use time;
 
 use imu;
-use video_stream::RecordMsg;
+use video_stream::VideoMsg;
 
 enum MissionTime {
     Paused(time::Duration),
@@ -76,9 +76,9 @@ pub struct NavigationUi {
     pub command_mode: bool,
 
     socket: UdpSocket,
-    vid0_t: Sender<RecordMsg>,
-    vid1_t: Sender<RecordMsg>,
-    vid2_t: Sender<RecordMsg>,
+    vid0_t: Sender<VideoMsg>,
+    vid1_t: Sender<VideoMsg>,
+    vid2_t: Sender<VideoMsg>,
     mission_folder: String,
 
     out_queue: VecDeque<(time::Tm, time::Duration, Vec<u8>, (String, u16))>, // Outbound packet queue
@@ -88,9 +88,9 @@ pub struct NavigationUi {
 
 impl NavigationUi {
     pub fn new(socket: UdpSocket,
-               vid0_t: Sender<RecordMsg>,
-               vid1_t: Sender<RecordMsg>,
-               vid2_t: Sender<RecordMsg>,
+               vid0_t: Sender<VideoMsg>,
+               vid1_t: Sender<VideoMsg>,
+               vid2_t: Sender<VideoMsg>,
                mission_folder: String) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
@@ -153,7 +153,7 @@ impl NavigationUi {
         use graphics::*;
 
         // Draw the background.
-        Background::new().color(self.bg_color).draw(ui, gl);
+        Background::new().color(self.bg_color).set(ui);
 
         let time_now = time::now();
 
@@ -210,16 +210,16 @@ impl NavigationUi {
                     MissionTime::Paused(current_time) => {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
 
-                        self.vid0_t.send(RecordMsg::Start(format!("mission_data/{}/forward.mkv", self.mission_folder)));
-                        //self.vid1_t.send(RecordMsg::Start(format!("mission_data/{}/reverse.mkv", self.mission_folder)));
-                        //self.vid2_t.send(RecordMsg::Start(format!("mission_data/{}/hazard.mkv", self.mission_folder)));
+                        self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward.mp4", self.mission_folder)));
+                        //self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse.mkv", self.mission_folder)));
+                        //self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard.mkv", self.mission_folder)));
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
 
-                        self.vid0_t.send(RecordMsg::Stop);
-                        //self.vid1_t.send(RecordMsg::Stop);
-                        //self.vid2_t.send(RecordMsg::Stop);
+                        self.vid0_t.send(VideoMsg::Stop);
+                        //self.vid1_t.send(VideoMsg::Stop);
+                        //self.vid2_t.send(VideoMsg::Stop);
                     },
                 };
             })
@@ -301,8 +301,6 @@ impl NavigationUi {
             .color(self.bg_color.plain_contrast())
             .set(IMU_ROLL_LABEL, ui);
 
-        self.roll.draw(c.trans(170.0, 215.0), gl);
-
         Label::new(roll.as_str())
             .xy((-ui.win_w / 2.0) + 250.0, (ui.win_h / 2.0) - 350.0)
             .font_size(16)
@@ -316,8 +314,6 @@ impl NavigationUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
-
-        self.heading.draw(c.trans(320.0, 215.0), gl);
 
         Label::new(heading.as_str())
             .xy((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 350.0)
@@ -586,6 +582,10 @@ impl NavigationUi {
 
         // Draw our UI!
         ui.draw(c, gl);
+
+        // Draw other stuff
+        self.roll.draw(c.trans(170.0, 215.0), gl);
+        self.heading.draw(c.trans(320.0, 215.0), gl);
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -876,51 +876,52 @@ impl NavigationUi {
     }
 }
 
-// Widget IDs
-const LOCAL_TIME: WidgetId = 0;
-const UTC_TIME: WidgetId = LOCAL_TIME + 1;
-const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
-const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
-const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
-const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
-const TIME_DELAY_VALUE: WidgetId = TIME_DELAY + 1;
+widget_ids! {
+    LOCAL_TIME,
+    UTC_TIME,
+    MISSION_TIME_LABEL,
+    MISSION_START_BUTTON,
+    MISSION_RESET_BUTTON,
+    TIME_DELAY,
+    TIME_DELAY_VALUE,
 
-// IMU section
-const IMU_LABEL: WidgetId = TIME_DELAY_VALUE + 1;
+    // IMU section
+    IMU_LABEL,
 
-const IMU_PITCH_LABEL: WidgetId = IMU_LABEL + 1;
-const IMU_PITCH_VALUE: WidgetId = IMU_PITCH_LABEL + 1;
+    IMU_PITCH_LABEL,
+    IMU_PITCH_VALUE,
 
-const IMU_ROLL_LABEL: WidgetId = IMU_PITCH_VALUE + 1;
-const IMU_ROLL_VALUE: WidgetId = IMU_ROLL_LABEL + 1;
+    IMU_ROLL_LABEL,
+    IMU_ROLL_VALUE,
 
-const IMU_HEADING_LABEL: WidgetId = IMU_ROLL_VALUE + 1;
-const IMU_HEADING_VALUE: WidgetId = IMU_HEADING_LABEL + 1;
+    IMU_HEADING_LABEL,
+    IMU_HEADING_VALUE,
 
-// GPS section
-const GPS_LABEL: WidgetId = IMU_HEADING_VALUE + 1;
-const LATITUDE_LABEL: WidgetId = GPS_LABEL + 1;
-const LONGITUDE_LABEL: WidgetId = LATITUDE_LABEL + 1;
-const SPEED_LABEL: WidgetId = LONGITUDE_LABEL + 1;
-const ALTITUDE_LABEL: WidgetId = SPEED_LABEL + 1;
-const ANGLE_LABEL: WidgetId = ALTITUDE_LABEL + 1;
+    // GPS section
+    GPS_LABEL,
+    LATITUDE_LABEL,
+    LONGITUDE_LABEL,
+    SPEED_LABEL,
+    ALTITUDE_LABEL,
+    ANGLE_LABEL,
 
-const L_RPM_SLIDER: WidgetId = ANGLE_LABEL + 1;
-const R_RPM_SLIDER: WidgetId = L_RPM_SLIDER + 1;
-const MOTOR_SPEED_SLIDER: WidgetId = R_RPM_SLIDER+ 1;
-const STOP_BUTTON: WidgetId = MOTOR_SPEED_SLIDER + 1;
-const F_PAN_SLIDER: WidgetId = STOP_BUTTON + 1;
-const F_TILT_SLIDER: WidgetId = F_PAN_SLIDER + 1;
-const COMMAND_LABEL: WidgetId = F_TILT_SLIDER + 1;
-const COMMAND_INPUT: WidgetId = COMMAND_LABEL + 1;
-const SEND_COMMAND_BUTTON: WidgetId = COMMAND_INPUT + 1;
-const MODE_LABEL: WidgetId = SEND_COMMAND_BUTTON + 1;
-const MODE_TOGGLE_BUTTON: WidgetId = MODE_LABEL + 1;
+    L_RPM_SLIDER,
+    R_RPM_SLIDER,
+    MOTOR_SPEED_SLIDER,
+    STOP_BUTTON,
+    F_PAN_SLIDER,
+    F_TILT_SLIDER,
+    COMMAND_LABEL,
+    COMMAND_INPUT,
+    SEND_COMMAND_BUTTON,
+    MODE_LABEL,
+    MODE_TOGGLE_BUTTON,
 
-const SADL_LABEL: WidgetId = MODE_TOGGLE_BUTTON + 1;
-const SADL_UP: WidgetId = SADL_LABEL + 1;
-const SADL_DOWN: WidgetId = SADL_UP + 1;
+    SADL_LABEL,
+    SADL_UP,
+    SADL_DOWN,
 
-const BLADE_LABEL: WidgetId = SADL_DOWN + 1;
-const BLADE_UP: WidgetId = BLADE_LABEL + 1;
-const BLADE_DOWN: WidgetId = BLADE_UP + 1;
+    BLADE_LABEL,
+    BLADE_UP,
+    BLADE_DOWN,
+}
