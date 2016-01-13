@@ -1,9 +1,11 @@
 #![feature(iter_arith)]
 #![feature(convert)]
 
+use std::cell::RefCell;
 use std::fs;
 use std::net::UdpSocket;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
@@ -24,6 +26,7 @@ use opengl_graphics::{GlGraphics, OpenGL, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
 use piston::input::*;
+use piston::event_loop::*;
 use piston::window::{WindowSettings, Size};
 use sdl2_window::Sdl2Window;
 
@@ -34,7 +37,7 @@ pub mod line_graph;
 pub mod tele_ui;
 
 fn main() {
-    let opengl = OpenGL::_3_2;
+    let opengl = OpenGL::V3_2;
     let window = Sdl2Window::new(
         WindowSettings::new(
             "PISCES Telemetry".to_string(),
@@ -42,8 +45,8 @@ fn main() {
         )
         .exit_on_esc(true)
         .samples(4)
-    );
-    let event_iter = window.events().ups(20).max_fps(60);
+    ).unwrap();
+    let window = Rc::new(RefCell::new(window));
     let mut gl = GlGraphics::new(opengl);
 
     let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
@@ -78,6 +81,7 @@ fn main() {
 
     let mut last_update_time = time::now();
 
+    let event_iter = window.clone().events().ups(20).max_fps(60);
     for e in event_iter {
         ui.handle_event(&e);
         

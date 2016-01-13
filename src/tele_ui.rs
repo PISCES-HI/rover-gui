@@ -269,7 +269,7 @@ impl TelemetryUi {
         use graphics::*;
 
         // Draw the background.
-        Background::new().color(self.bg_color).draw(ui, gl);
+        Background::new().color(self.bg_color).set(ui);
 
         let time_now = time::now();
 
