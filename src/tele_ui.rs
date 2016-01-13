@@ -690,7 +690,7 @@ impl TelemetryUi {
 
         // Lower avionics box temp
 
-        Label::new(format!("Lower Avionics").as_str())
+        Label::new(format!("Ambient").as_str())
             .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
