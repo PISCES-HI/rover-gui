@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
-extern crate time;
-extern crate sdl2;
-extern crate piston;
+#[macro_use]
 extern crate conrod;
+extern crate time;
+extern crate piston;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate sdl2_window;
@@ -23,9 +23,8 @@ use conrod::{
 use opengl_graphics::{GlGraphics, OpenGL, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 use piston::input;
-use piston::event::*;
+use piston::input::*;
 use piston::window::{WindowSettings, Size};
-use sdl2::controller;
 use sdl2_window::Sdl2Window;
 
 use tele_ui::TelemetryUi;

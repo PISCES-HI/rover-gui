@@ -1015,93 +1015,95 @@ impl TelemetryUi {
     }
 }
 
-// Widget IDs
-const LOCAL_TIME: WidgetId = 0;
-const UTC_TIME: WidgetId = LOCAL_TIME + 1;
-const MISSION_TIME_LABEL: WidgetId = UTC_TIME + 1;
-const MISSION_START_BUTTON: WidgetId = MISSION_TIME_LABEL + 1;
-const MISSION_RESET_BUTTON: WidgetId = MISSION_START_BUTTON + 1;
-const TIME_DELAY: WidgetId = MISSION_RESET_BUTTON + 1;
+widget_ids! {
+    // Widget IDs
+    LOCAL_TIME,
+    UTC_TIME,
+    MISSION_TIME_LABEL,
+    MISSION_START_BUTTON,
+    MISSION_RESET_BUTTON,
+    TIME_DELAY,
 
-// Power section
-const POWER_LABEL: WidgetId = TIME_DELAY + 1;
+    // Power section
+    POWER_LABEL,
 
-const H_48_LABEL: WidgetId = POWER_LABEL + 1;
-const H_48_V_VALUE: WidgetId = H_48_LABEL + 1;
-const H_48_A_VALUE: WidgetId = H_48_V_VALUE + 1;
+    H_48_LABEL,
+    H_48_V_VALUE,
+    H_48_A_VALUE,
 
-const H_24_LABEL: WidgetId = H_48_A_VALUE + 1;
-const H_24_V_VALUE: WidgetId = H_24_LABEL + 1;
-const H_24_A_VALUE: WidgetId = H_24_V_VALUE + 1;
+    H_24_LABEL,
+    H_24_V_VALUE,
+    H_24_A_VALUE,
 
-const P_12_E_LABEL: WidgetId = H_24_A_VALUE + 1;
-const P_12_E_V_VALUE: WidgetId = P_12_E_LABEL + 1;
-const P_12_E_A_VALUE: WidgetId = P_12_E_V_VALUE + 1;
+    P_12_E_LABEL,
+    P_12_E_V_VALUE,
+    P_12_E_A_VALUE,
 
-const P_12_PL_LABEL: WidgetId = P_12_E_A_VALUE + 1;
-const P_12_PL_V_VALUE: WidgetId = P_12_PL_LABEL + 1;
-const P_12_PL_A_VALUE: WidgetId = P_12_PL_V_VALUE + 1;
+    P_12_PL_LABEL,
+    P_12_PL_V_VALUE,
+    P_12_PL_A_VALUE,
 
-const L_MOTOR_POWER_LABEL: WidgetId = P_12_PL_A_VALUE + 1;
-const L_MOTOR_RPM_LABEL: WidgetId = L_MOTOR_POWER_LABEL + 1;
-const L_MOTOR_AMP_LABEL: WidgetId = L_MOTOR_RPM_LABEL + 1;
+    L_MOTOR_POWER_LABEL,
+    L_MOTOR_RPM_LABEL,
+    L_MOTOR_AMP_LABEL,
 
-const R_MOTOR_POWER_LABEL: WidgetId = L_MOTOR_AMP_LABEL + 1;
-const R_MOTOR_RPM_LABEL: WidgetId = R_MOTOR_POWER_LABEL + 1;
-const R_MOTOR_AMP_LABEL: WidgetId = R_MOTOR_RPM_LABEL + 1;
+    R_MOTOR_POWER_LABEL,
+    R_MOTOR_RPM_LABEL,
+    R_MOTOR_AMP_LABEL,
 
-// GPS section
-const GPS_LABEL: WidgetId = R_MOTOR_AMP_LABEL + 1;
-const LATITUDE_LABEL: WidgetId = GPS_LABEL + 1;
-const LONGITUDE_LABEL: WidgetId = LATITUDE_LABEL + 1;
-const SPEED_LABEL: WidgetId = LONGITUDE_LABEL + 1;
-const GPS_ALTITUDE_LABEL: WidgetId = SPEED_LABEL + 1;
-const ANGLE_LABEL: WidgetId = GPS_ALTITUDE_LABEL + 1;
+    // GPS section
+    GPS_LABEL,
+    LATITUDE_LABEL,
+    LONGITUDE_LABEL,
+    SPEED_LABEL,
+    GPS_ALTITUDE_LABEL,
+    ANGLE_LABEL,
 
-// Temp section
-const TEMP_LABEL: WidgetId = ANGLE_LABEL + 1;
+    // Temp section
+    TEMP_LABEL,
 
-const L_MOTOR_TEMP_LABEL: WidgetId = TEMP_LABEL + 1;
-const L_MOTOR_C_LABEL: WidgetId = L_MOTOR_TEMP_LABEL + 1;
+    L_MOTOR_TEMP_LABEL,
+    L_MOTOR_C_LABEL,
 
-const R_MOTOR_TEMP_LABEL: WidgetId = L_MOTOR_C_LABEL + 1;
-const R_MOTOR_C_LABEL: WidgetId = R_MOTOR_TEMP_LABEL + 1;
+    R_MOTOR_TEMP_LABEL,
+    R_MOTOR_C_LABEL,
 
-const UPR_A_TEMP_LABEL: WidgetId = R_MOTOR_C_LABEL + 1;
-const UPR_A_TEMP_VALUE: WidgetId = UPR_A_TEMP_LABEL + 1;
+    UPR_A_TEMP_LABEL,
+    UPR_A_TEMP_VALUE,
 
-const LWR_A_TEMP_LABEL: WidgetId = UPR_A_TEMP_VALUE + 1;
-const LWR_A_TEMP_VALUE: WidgetId = LWR_A_TEMP_LABEL + 1;
+    LWR_A_TEMP_LABEL,
+    LWR_A_TEMP_VALUE,
 
-// Weather section
-const WEATHER_LABEL: WidgetId = LWR_A_TEMP_VALUE + 1;
+    // Weather section
+    WEATHER_LABEL,
 
-const WIND_LABEL: WidgetId = WEATHER_LABEL + 1;
-const WIND_VALUE: WidgetId = WIND_LABEL + 1;
+    WIND_LABEL,
+    WIND_VALUE,
 
-const ALTITUDE_LABEL: WidgetId = WIND_VALUE + 1;
-const ALTITUDE_VALUE: WidgetId = ALTITUDE_LABEL + 1;
+    ALTITUDE_LABEL,
+    ALTITUDE_VALUE,
 
-const PRESSURE_LABEL: WidgetId = ALTITUDE_VALUE + 1;
-const PRESSURE_VALUE: WidgetId = PRESSURE_LABEL + 1;
+    PRESSURE_LABEL,
+    PRESSURE_VALUE,
 
-const WEATHER_TEMP_LABEL: WidgetId = PRESSURE_VALUE + 1;
-const WEATHER_TEMP_VALUE: WidgetId = WEATHER_TEMP_LABEL + 1;
+    WEATHER_TEMP_LABEL,
+    WEATHER_TEMP_VALUE,
 
-// IMU section
-const IMU_LABEL: WidgetId = WEATHER_TEMP_VALUE + 1;
+    // IMU section
+    IMU_LABEL,
 
-const IMU_PITCH_LABEL: WidgetId = IMU_LABEL + 1;
-const IMU_PITCH_VALUE: WidgetId = IMU_PITCH_LABEL + 1;
+    IMU_PITCH_LABEL,
+    IMU_PITCH_VALUE,
 
-const IMU_ROLL_LABEL: WidgetId = IMU_PITCH_VALUE + 1;
-const IMU_ROLL_VALUE: WidgetId = IMU_ROLL_LABEL + 1;
+    IMU_ROLL_LABEL,
+    IMU_ROLL_VALUE,
 
-const IMU_HEADING_LABEL: WidgetId = IMU_ROLL_VALUE + 1;
-const IMU_HEADING_VALUE: WidgetId = IMU_HEADING_LABEL + 1;
+    IMU_HEADING_LABEL,
+    IMU_HEADING_VALUE,
 
-// Trend graph labels
-const TREND_H_48V_LABEL: WidgetId = IMU_HEADING_VALUE + 1;
-const TREND_H_24A_LABEL: WidgetId = TREND_H_48V_LABEL + 1;
-const TREND_P_12_E_V_LABEL: WidgetId = TREND_H_24A_LABEL + 1;
-const TREND_LR_MOTOR_TEMP_LABEL: WidgetId = TREND_P_12_E_V_LABEL + 1;
+    // Trend graph labels
+    TREND_H_48V_LABEL,
+    TREND_H_24A_LABEL,
+    TREND_P_12_E_V_LABEL,
+    TREND_LR_MOTOR_TEMP_LABEL,
+}
