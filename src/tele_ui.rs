@@ -900,36 +900,38 @@ impl TelemetryUi {
         for packet in packets {
             let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
 
+            //println!("{:?}", packet_parts);
+
             match packet_parts[0].as_str() {
                 "VOLT" => {
                     /////////////////////
-                    self.h_48_v.add_value(packet_parts[1].parse().unwrap());
-                    let h_48_v = self.h_48_v.get().unwrap();
+                    self.h_48_v.add_value(packet_parts[1].parse().unwrap_or(0.0));
+                    let h_48_v = self.h_48_v.get().unwrap_or(0.0);
 
                     let point_x = self.v48_graph.num_points(0) as f64;
                     self.v48_graph.add_point(0, point_x, h_48_v);
 
                     /////////////////////
-                    self.h_24_v.add_value(packet_parts[2].parse().unwrap());
+                    self.h_24_v.add_value(packet_parts[2].parse().unwrap_or(0.0));
 
                     /////////////////////
-                    self.p_12_e_v.add_value(packet_parts[3].parse().unwrap());
-                    let p_12_e_v = self.p_12_e_v.get().unwrap();
+                    self.p_12_e_v.add_value(packet_parts[3].parse().unwrap_or(0.0));
+                    let p_12_e_v = self.p_12_e_v.get().unwrap_or(0.0);
 
                     let point_x = self.v12_graph.num_points(0) as f64;
                     self.v12_graph.add_point(0, point_x, p_12_e_v);
 
                     /////////////////////
-                    self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap());
+                    self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap_or(0.0));
                 },
                 "AMP" => {
-                    self.l_motor_amp.add_value(packet_parts[1].parse().unwrap());
-                    self.r_motor_amp.add_value(packet_parts[2].parse().unwrap());
-                    self.p_12_e_a.add_value(packet_parts[3].parse().unwrap());
+                    self.l_motor_amp.add_value(packet_parts[1].parse().unwrap_or(0.0));
+                    self.r_motor_amp.add_value(packet_parts[2].parse().unwrap_or(0.0));
+                    self.p_12_e_a.add_value(packet_parts[3].parse().unwrap_or(0.0));
                     
                     // h-24
-                    self.h_24_a.add_value(packet_parts[4].parse().unwrap());
-                    let h_24_a = self.p_12_e_v.get().unwrap();
+                    self.h_24_a.add_value(packet_parts[4].parse().unwrap_or(0.0));
+                    let h_24_a = self.p_12_e_v.get().unwrap_or(0.0);
 
                     let point_x = self.a24_graph.num_points(0) as f64;
                     self.a24_graph.add_point(0, point_x, h_24_a);
@@ -958,10 +960,10 @@ impl TelemetryUi {
                     self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
                 },
                 "UPR_A_TEMP" => {
-                    self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap());
+                    self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
                 },
                 "LWR_A_TEMP" => {
-                    self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap());
+                    self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
                 },
                 "W_TEMP" => {
                     let temp = packet_parts[1].parse().unwrap();
@@ -977,13 +979,13 @@ impl TelemetryUi {
                     self.wind_speed.add_value(packet_parts[1].parse().unwrap());
                 },
                 "IMU" => {
-                    let ax: f64 = packet_parts[1].parse().unwrap();
-                    let ay: f64 = packet_parts[2].parse().unwrap();
-                    let az: f64 = packet_parts[3].parse().unwrap();
+                    let ax: f64 = packet_parts[1].parse().unwrap_or(0.0);
+                    let ay: f64 = packet_parts[2].parse().unwrap_or(0.0);
+                    let az: f64 = packet_parts[3].parse().unwrap_or(0.0);
 
-                    let mx: f64 = packet_parts[7].parse().unwrap();
-                    let my: f64 = packet_parts[8].parse().unwrap();
-                    let mz: f64 = packet_parts[9].parse().unwrap();
+                    let mx: f64 = packet_parts[7].parse().unwrap_or(0.0);
+                    let my: f64 = packet_parts[8].parse().unwrap_or(0.0);
+                    let mz: f64 = packet_parts[9].parse().unwrap_or(0.0);
 
                     let roll = f64::atan2(ay, az);
                     let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
