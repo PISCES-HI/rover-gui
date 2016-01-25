@@ -863,7 +863,7 @@ impl NavigationUi {
     }
 
     pub fn send_command(&mut self) {
-        let packet = format!("Z{}", self.command);
+        let packet = format!("Z{}:", self.command, self.motor_speed);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
