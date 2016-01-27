@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{BufWriter, Write};
-use std::net::UdpSocket;
 use std::ops::DerefMut;
 
 use conrod::{
@@ -66,8 +65,6 @@ impl RygLimit {
 }
 
 pub struct TelemetryUi {
-    socket: UdpSocket,
-
     bg_color: Color,
 
     mission_time: MissionTime,
@@ -126,7 +123,7 @@ pub struct TelemetryUi {
 }
 
 impl TelemetryUi {
-    pub fn new(socket: UdpSocket, mission_folder: &str) -> TelemetryUi {
+    pub fn new(mission_folder: &str) -> TelemetryUi {
         let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
@@ -179,8 +176,6 @@ impl TelemetryUi {
                  .unwrap();
 
         TelemetryUi {
-            socket: socket,
-
             bg_color: rgb(0.2, 0.35, 0.45),
 
             mission_time: MissionTime::Paused(time::Duration::zero()),

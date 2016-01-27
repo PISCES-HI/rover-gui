@@ -1,5 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::io;
+use std::io::Write;
 use std::net::UdpSocket;
 use std::ops::DerefMut;
 use std::sync::mpsc::Sender;
@@ -75,7 +76,7 @@ pub struct NavigationUi {
     pub command: String,
     pub command_mode: bool,
 
-    socket: UdpSocket,
+    client: UdpSocket,
     vid0_t: Sender<VideoMsg>,
     vid1_t: Sender<VideoMsg>,
     vid2_t: Sender<VideoMsg>,
@@ -88,7 +89,7 @@ pub struct NavigationUi {
 }
 
 impl NavigationUi {
-    pub fn new(socket: UdpSocket,
+    pub fn new(client: UdpSocket,
                vid0_t: Sender<VideoMsg>,
                vid1_t: Sender<VideoMsg>,
                vid2_t: Sender<VideoMsg>,
@@ -129,7 +130,7 @@ impl NavigationUi {
             command: "".to_string(),
             command_mode: false,
 
-            socket: socket,
+            client: client,
             vid0_t: vid0_t,
             vid1_t: vid1_t,
             vid2_t: vid2_t,
@@ -656,8 +657,7 @@ impl NavigationUi {
                 // LR motor stop
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
                 // Brake
                 self.send_brake();
             }
@@ -665,29 +665,25 @@ impl NavigationUi {
                 // Forward
                 self.l_rpm = 100.0*self.motor_speed;
                 self.r_rpm = 100.0*self.motor_speed;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
             },
             Down => {
                 // Forward
                 self.l_rpm = -100.0*self.motor_speed;
                 self.r_rpm = -100.0*self.motor_speed;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
             },
             Left => {
                 // Forward
                 self.l_rpm = -100.0*self.motor_speed;
                 self.r_rpm = 100.0*self.motor_speed;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
             },
             Right => {
                 // Forward
                 self.l_rpm = 100.0*self.motor_speed;
                 self.r_rpm = -100.0*self.motor_speed;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
             },
             Minus => {
                 self.motor_speed -= 0.1;
@@ -747,8 +743,7 @@ impl NavigationUi {
                 // LR motor stop
                 self.l_rpm = 0.0;
                 self.r_rpm = 0.0;
-                self.send_l_rpm();
-                self.send_r_rpm();
+                self.send_lr_rpm();
             },
             D1 | D2 => {
                 // SADL stop
@@ -863,7 +858,7 @@ impl NavigationUi {
     }
 
     pub fn send_command(&mut self) {
-        let packet = format!("Z{}:", self.command, self.motor_speed);
+        let packet = format!("Z{}:{}", self.command, self.motor_speed);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
@@ -873,11 +868,16 @@ impl NavigationUi {
     }
 
     fn flush_out_queue(&mut self) -> io::Result<usize> {
+        use std::iter;
+
         let mut bytes_written = 0;
         while !self.out_queue.is_empty() {
             if time::now()-self.out_queue[0].0 >= self.out_queue[0].1 {
-                let (_, _, data, addr) = self.out_queue.pop_front().unwrap();
-                bytes_written += try!(self.socket.send_to(data.as_slice(), (addr.0.as_str(), addr.1)));
+                let (_, _, mut data, addr) = self.out_queue.pop_front().unwrap();
+                let data_len = data.len();
+                bytes_written += try!(self.client.send_to(data.as_slice(), (addr.0.as_str(), addr.1)));
+                //data.extend(iter::repeat(b' ').take(64 - data_len)); // Pad the message to always be 64 bytes
+                //bytes_written += try!(self.client.write(data.as_slice()));
             } else {
                 break;
             }

@@ -41,6 +41,7 @@ pub fn start_video_stream(record_r: Receiver<VideoMsg>,
         .spawn(move || {
             let fps: i64 = 10;
 
+            //let mut format_context = format::input_with(&path, dict!{"rtsp_transport" => "tcp"}).unwrap();
             let mut format_context = format::input(&path).unwrap();
             //format::dump(&format_context, 0, Some(path.as_str()));
 

@@ -58,7 +58,7 @@ fn main() {
     let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
     socket.send_to(b"connect me plz", ("10.10.155.165", 30001));
     
-    let in_socket = socket.try_clone().unwrap();
+    let in_socket = socket;
     let (packet_t, packet_r) = channel();
     
     thread::Builder::new()
@@ -75,7 +75,7 @@ fn main() {
     
     let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
     fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
-    let mut tele_ui = TelemetryUi::new(socket, mission_folder.as_str());
+    let mut tele_ui = TelemetryUi::new(mission_folder.as_str());
     
     ///////////////////////////////////////////////////////////////////////////////////////
 

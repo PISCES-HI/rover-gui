@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::fs;
+use std::io::{Read, Write};
 use std::mem;
 use std::net::UdpSocket;
 use std::path::Path;
@@ -16,7 +17,7 @@ extern crate piston;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate sdl2_window;
-extern crate ffmpeg;
+#[macro_use] extern crate ffmpeg;
 extern crate image;
 
 use conrod::{
@@ -62,18 +63,25 @@ fn main() {
     let mut ui = Ui::new(glyph_cache, theme);
     
     // Create a UDP socket to talk to the rover
-    let socket = UdpSocket::bind("0.0.0.0:30002").unwrap();
-    socket.send_to(b"connect me plz", ("10.10.155.165", 30001));
+    let client = UdpSocket::bind("0.0.0.0:30002").unwrap();
+    client .send_to(b"connect me plz", ("10.10.155.165", 30001));
     
-    let in_socket = socket.try_clone().unwrap();
+    let client_in = client.try_clone().unwrap();
     let (packet_t, packet_r) = channel();
+
+    /*let mut client = TcpStream::connect("10.10.155.165:30001").unwrap();
+    client.write(b"connect me plz");
+    
+    let mut client_in = client.try_clone().unwrap();
+    let (packet_t, packet_r) = channel();*/
     
     thread::Builder::new()
         .name("packet_in".to_string())
         .spawn(move || {
             let mut buf = [0u8; 512];
             loop {
-                let (bytes_read, _) = in_socket.recv_from(&mut buf).unwrap();
+                let (bytes_read, _) = client_in.recv_from(&mut buf).unwrap();
+                //let bytes_read = client_in.read(&mut buf).unwrap();
                 if let Ok(msg) = String::from_utf8(buf[0..bytes_read].iter().cloned().collect()) {
                     packet_t.send(msg).unwrap();
                 }
@@ -98,7 +106,7 @@ fn main() {
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
-    let mut nav_ui = NavigationUi::new(socket, vid0_t, vid1_t, vid2_t, mission_folder);
+    let mut nav_ui = NavigationUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder);
     nav_ui.send_l_rpm();
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
