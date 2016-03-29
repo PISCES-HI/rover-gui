@@ -8,11 +8,17 @@ authors = ["Theodore DeRego <tderego94@gmail.com>"]
 name="navigation"
 path="../src/navigation.rs"
 
-[dependencies.ffmpeg]
-git = "https://github.com/meh/rust-ffmpeg"
+#[dependencies.ffmpeg-sys]
 #git = "https://github.com/tedsta/rust-ffmpeg"
-features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
-default-features = false
+#git = "https://github.com/meh/rust-ffmpeg-sys"
+#features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+#default-features = false
+
+#[dependencies.ffmpeg]
+#git = "https://github.com/tedsta/rust-ffmpeg"
+#git = "https://github.com/meh/rust-ffmpeg"
+#features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+#default-features = false
 
 [dependencies]
 
@@ -23,3 +29,4 @@ piston2d-graphics = "0.11.0"
 piston2d-opengl_graphics = "0.19.0"
 image = "0.5.1"
 conrod = "0.22.0"
+#ffmpeg = "*"
