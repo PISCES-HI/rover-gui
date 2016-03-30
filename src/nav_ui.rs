@@ -29,7 +29,7 @@ use piston::input;
 use time;
 
 use imu;
-use video_stream::VideoMsg;
+//use video_stream::VideoMsg;
 
 enum MissionTime {
     Paused(time::Duration),
@@ -77,9 +77,9 @@ pub struct NavigationUi {
     pub command_mode: bool,
 
     client: UdpSocket,
-    vid0_t: Sender<VideoMsg>,
+    /*vid0_t: Sender<VideoMsg>,
     vid1_t: Sender<VideoMsg>,
-    vid2_t: Sender<VideoMsg>,
+    vid2_t: Sender<VideoMsg>,*/
     mission_folder: String,
     vid_num: u16,
 
@@ -90,9 +90,9 @@ pub struct NavigationUi {
 
 impl NavigationUi {
     pub fn new(client: UdpSocket,
-               vid0_t: Sender<VideoMsg>,
+               /*vid0_t: Sender<VideoMsg>,
                vid1_t: Sender<VideoMsg>,
-               vid2_t: Sender<VideoMsg>,
+               vid2_t: Sender<VideoMsg>,*/
                mission_folder: String) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
@@ -131,9 +131,9 @@ impl NavigationUi {
             command_mode: false,
 
             client: client,
-            vid0_t: vid0_t,
+            /*vid0_t: vid0_t,
             vid1_t: vid1_t,
-            vid2_t: vid2_t,
+            vid2_t: vid2_t,*/
             mission_folder: mission_folder,
             vid_num: 0,
 
@@ -213,18 +213,18 @@ impl NavigationUi {
                     MissionTime::Paused(current_time) => {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
 
-                        self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
+                        /*self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
                         self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse{}.mkv", self.mission_folder, self.vid_num)));
-                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));
+                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));*/
 
                         self.vid_num += 1;
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
 
-                        self.vid0_t.send(VideoMsg::Stop);
+                        /*self.vid0_t.send(VideoMsg::Stop);
                         self.vid1_t.send(VideoMsg::Stop);
-                        self.vid2_t.send(VideoMsg::Stop);
+                        self.vid2_t.send(VideoMsg::Stop);*/
                     },
                 };
             })
@@ -416,6 +416,7 @@ impl NavigationUi {
             .label("L Motor")
             .label_color(white())
             .react(|new_rpm| {
+                println!("{}", new_rpm);
                 self.try_update_l_rpm(new_rpm);
             })
             .set(L_RPM_SLIDER, ui);
@@ -808,19 +809,19 @@ impl NavigationUi {
     }
 
     pub fn send_l_rpm(&mut self) {
-        let packet = format!("A{}", self.l_rpm as i32);
+        let packet = format!("A{}|", self.l_rpm as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
     pub fn send_r_rpm(&mut self) {
-        let packet = format!("B{}", self.r_rpm as i32);
+        let packet = format!("B{}|", self.r_rpm as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
     pub fn send_lr_rpm(&mut self) {
-        let packet = format!("H{}:{}", self.l_rpm as i32, self.r_rpm as i32);
+        let packet = format!("H{}|{}|", self.l_rpm as i32, self.r_rpm as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
@@ -829,7 +830,7 @@ impl NavigationUi {
         let time_since = (time::now() - self.last_f_pan_time).num_milliseconds();
         if time_since >= 500 {
             self.last_f_pan_time = time::now();
-            let packet = format!("C{}", self.f_pan as i32);
+            let packet = format!("C{}|", self.f_pan as i32);
             let delay = self.delay;
             self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
@@ -839,31 +840,32 @@ impl NavigationUi {
         let time_since = (time::now() - self.last_f_tilt_time).num_milliseconds();
         if time_since >= 500 {
             self.last_f_tilt_time = time::now();
-            let packet = format!("D{}", self.f_tilt as i32);
+            let packet = format!("D{}|", self.f_tilt as i32);
             let delay = self.delay;
             self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
 
     pub fn send_sadl(&mut self) {
-        let packet = format!("E{}", self.sadl as i32);
+        let packet = format!("E{}|", self.sadl as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
     pub fn send_blade(&mut self) {
-        let packet = format!("F{}", self.blade as i32);
+        let packet = format!("F{}|", self.blade as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
     pub fn send_command(&mut self) {
-        let packet = format!("Z{}:{}", self.command, self.motor_speed);
+        let packet = format!("Z{}|{}|", self.command, self.motor_speed);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn queue_packet(&mut self, delay: time::Duration, data: Vec<u8>, addr: (String, u16)) {
+    pub fn queue_packet(&mut self, delay: time::Duration, mut data: Vec<u8>, addr: (String, u16)) {
+        data.push(0); // Null terminate all of our packets
         self.out_queue.push_back((time::now(), delay, data, addr));
     }
 
