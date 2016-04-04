@@ -416,7 +416,6 @@ impl NavigationUi {
             .label("L Motor")
             .label_color(white())
             .react(|new_rpm| {
-                println!("{}", new_rpm);
                 self.try_update_l_rpm(new_rpm);
             })
             .set(L_RPM_SLIDER, ui);
