@@ -1,5 +1,3 @@
-#![feature(convert)]
-
 use std::cell::RefCell;
 use std::fs;
 use std::io::{Read, Write};
