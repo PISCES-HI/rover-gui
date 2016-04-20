@@ -8,12 +8,6 @@ authors = ["Theodore DeRego <tderego94@gmail.com>"]
 name="navigation"
 path="../src/navigation.rs"
 
-#[dependencies.ffmpeg-sys]
-#git = "https://github.com/tedsta/rust-ffmpeg-sys"
-#version = "2.8.3"
-#features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling", "ff_api_quant_bias"]
-#default-features = false
-
 [dependencies.ffmpeg]
 git = "https://github.com/meh/rust-ffmpeg"
 features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
