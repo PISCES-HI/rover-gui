@@ -29,7 +29,7 @@ use piston::input;
 use time;
 
 use imu;
-//use video_stream::VideoMsg;
+use video_stream::VideoMsg;
 
 enum MissionTime {
     Paused(time::Duration),
@@ -77,9 +77,9 @@ pub struct NavigationUi {
     pub command_mode: bool,
 
     client: UdpSocket,
-    /*vid0_t: Sender<VideoMsg>,
+    vid0_t: Sender<VideoMsg>,
     vid1_t: Sender<VideoMsg>,
-    vid2_t: Sender<VideoMsg>,*/
+    vid2_t: Sender<VideoMsg>,
     mission_folder: String,
     vid_num: u16,
 
@@ -90,9 +90,9 @@ pub struct NavigationUi {
 
 impl NavigationUi {
     pub fn new(client: UdpSocket,
-               /*vid0_t: Sender<VideoMsg>,
+               vid0_t: Sender<VideoMsg>,
                vid1_t: Sender<VideoMsg>,
-               vid2_t: Sender<VideoMsg>,*/
+               vid2_t: Sender<VideoMsg>,
                mission_folder: String) -> NavigationUi {
         NavigationUi {
             bg_color: rgb(0.2, 0.35, 0.45),
@@ -131,9 +131,9 @@ impl NavigationUi {
             command_mode: false,
 
             client: client,
-            /*vid0_t: vid0_t,
+            vid0_t: vid0_t,
             vid1_t: vid1_t,
-            vid2_t: vid2_t,*/
+            vid2_t: vid2_t,
             mission_folder: mission_folder,
             vid_num: 0,
 
@@ -213,18 +213,18 @@ impl NavigationUi {
                     MissionTime::Paused(current_time) => {
                         self.mission_time = MissionTime::Running(time::now(), current_time);
 
-                        /*self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
+                        self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
                         self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse{}.mkv", self.mission_folder, self.vid_num)));
-                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));*/
+                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));
 
                         self.vid_num += 1;
                     },
                     MissionTime::Running(start_time, extra_time) => {
                         self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
 
-                        /*self.vid0_t.send(VideoMsg::Stop);
+                        self.vid0_t.send(VideoMsg::Stop);
                         self.vid1_t.send(VideoMsg::Stop);
-                        self.vid2_t.send(VideoMsg::Stop);*/
+                        self.vid2_t.send(VideoMsg::Stop);
                     },
                 };
             })

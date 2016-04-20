@@ -17,7 +17,7 @@ extern crate piston;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate sdl2_window;
-//#[macro_use] extern crate ffmpeg;
+#[macro_use] extern crate ffmpeg;
 extern crate image;
 
 use conrod::{
@@ -34,15 +34,15 @@ use piston::event_loop::*;
 use sdl2_window::Sdl2Window;
 
 use nav_ui::NavigationUi;
-//use video_stream::{init_ffmpeg, start_video_stream, VideoMsg};
+use video_stream::{init_ffmpeg, start_video_stream, VideoMsg};
 
 mod line_graph;
 mod nav_ui;
-//mod video_stream;
+mod video_stream;
 mod imu;
 
 fn main() {
-    //init_ffmpeg();
+    init_ffmpeg();
 
     let opengl = OpenGL::V3_2;
     let window = Sdl2Window::new(
@@ -93,20 +93,20 @@ fn main() {
     let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
     fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
 
-    /*let (vid0_t, vid0_r) = channel();
+    let (vid0_t, vid0_r) = channel();
     let (vid1_t, vid1_r) = channel();
-    let (vid2_t, vid2_r) = channel();*/
+    let (vid2_t, vid2_r) = channel();
     
-    /*let (video0_texture, video0_image) =
+    let (video0_texture, video0_image) =
         start_video_stream(vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
     let (video1_texture, video1_image) =
         start_video_stream(vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
     let (video2_texture, video2_image) =
-        start_video_stream(vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");*/
+        start_video_stream(vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
-    let mut nav_ui = NavigationUi::new(client, /*vid0_t, vid1_t, vid2_t,*/ mission_folder);
+    let mut nav_ui = NavigationUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder);
     nav_ui.send_l_rpm();
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
@@ -114,7 +114,7 @@ fn main() {
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    // let mut vid_textures = [video0_texture, video1_texture, video2_texture];
+    let mut vid_textures = [video0_texture, video1_texture, video2_texture];
     let mut vid_displays = [0, 1, 2];
 
     let mut mouse_x = 0.0;
@@ -165,14 +165,14 @@ fn main() {
                 nav_ui.handle_packet(packet);
             }
             
-            /*let video0_image = video0_image.lock().unwrap();
+            let video0_image = video0_image.lock().unwrap();
             vid_textures[0].update(&*video0_image);
             
             let video1_image = video1_image.lock().unwrap();
             vid_textures[1].update(&*video1_image);
             
             let video2_image = video2_image.lock().unwrap();
-            vid_textures[2].update(&*video2_image);*/
+            vid_textures[2].update(&*video2_image);
         });
         
         // Render GUI
@@ -186,19 +186,19 @@ fn main() {
                     .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
                           &c.draw_state, c.transform,
                           gl);
-                //image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                //image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                //image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
             });
         });
     }
