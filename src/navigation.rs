@@ -184,19 +184,19 @@ fn main() {
                     .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/512.0, 400.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/450.0, 400.0/450.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, gl);
                 
                 Rectangle::new([0.0, 0.0, 0.4, 1.0])
                     .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
                           &c.draw_state, c.transform,
                           gl);
-                image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/512.0, 200.0/512.0).transform, gl);
+                image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, gl);
             });
         });
     }
