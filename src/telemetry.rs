@@ -1,5 +1,4 @@
 #![feature(iter_arith)]
-#![feature(convert)]
 
 use std::cell::RefCell;
 use std::fs;
@@ -16,7 +15,7 @@ extern crate time;
 extern crate piston;
 extern crate graphics;
 extern crate opengl_graphics;
-extern crate sdl2_window;
+extern crate glutin_window;
 
 use conrod::{
     Theme,
@@ -28,7 +27,7 @@ use piston::input;
 use piston::input::*;
 use piston::event_loop::*;
 use piston::window::{WindowSettings, Size};
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 
 use tele_ui::TelemetryUi;
 
@@ -38,7 +37,7 @@ pub mod tele_ui;
 
 fn main() {
     let opengl = OpenGL::V3_2;
-    let window = Sdl2Window::new(
+    let window = GlutinWindow::new(
         WindowSettings::new(
             "PISCES Telemetry".to_string(),
             Size { width: 1280, height: 700 }

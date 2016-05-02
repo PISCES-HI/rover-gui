@@ -14,7 +14,7 @@ extern crate piston;
 #[macro_use] extern crate conrod;
 extern crate graphics;
 extern crate opengl_graphics;
-extern crate sdl2_window;
+extern crate glutin_window;
 #[macro_use] extern crate ffmpeg;
 extern crate image;
 
@@ -29,7 +29,7 @@ use piston::input;
 use piston::input::*;
 use piston::window::{WindowSettings, Size};
 use piston::event_loop::*;
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 
 use nav_ui::NavigationUi;
 use video_stream::{init_ffmpeg, start_video_stream, VideoMsg};
@@ -43,7 +43,7 @@ fn main() {
     init_ffmpeg();
 
     let opengl = OpenGL::V3_2;
-    let window = Sdl2Window::new(
+    let window = GlutinWindow::new(
         WindowSettings::new(
             "PISCES Navigation".to_string(),
             Size { width: 1280, height: 700 }

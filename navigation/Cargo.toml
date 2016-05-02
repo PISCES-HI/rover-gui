@@ -16,7 +16,7 @@ default-features = false
 [dependencies]
 
 time = "0.1.*"
-pistoncore-sdl2_window = "0.18.0"
+pistoncore-glutin_window = "0.17.1"
 piston = "0.15.1"
 piston2d-graphics = "0.11.0"
 piston2d-opengl_graphics = "0.19.0"
