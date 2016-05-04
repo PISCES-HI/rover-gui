@@ -1,5 +1,4 @@
-use graphics::Context;
-use opengl_graphics::GlGraphics;
+use graphics::{Context, Graphics};
 
 // Roll
 
@@ -14,20 +13,20 @@ impl Roll {
         }
     }
     
-    pub fn draw(&self, c: Context, gl: &mut GlGraphics) {
+    pub fn draw<G: Graphics>(&self, c: Context, g: &mut G) {
         use graphics::*;
         
         // Draw background rectangle
         Rectangle::new([0.3, 0.3, 1.0, 1.0])
             .draw([0.0, 0.0, 120.0, 120.0],
                   &c.draw_state, c.transform,
-                  gl);
+                  g);
 
         // Draw base line
         Line::new([0.0, 0.0, 0.0, 1.0], 2.0)
             .draw([0.0, 60.0, 120.0, 60.0],
                   &c.draw_state, c.transform,
-                  gl);
+                  g);
 
         // Draw rotator line
         {
@@ -36,7 +35,7 @@ impl Roll {
             Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
                 .draw([-60.0, 0.0, 60.0, 0.0],
                       &c.draw_state, c.transform,
-                      gl);
+                      g);
         }
     }
 
@@ -58,20 +57,20 @@ impl Heading {
         }
     }
     
-    pub fn draw(&self, c: Context, gl: &mut GlGraphics) {
+    pub fn draw<G: Graphics>(&self, c: Context, g: &mut G) {
         use graphics::*;
         
         // Draw background rectangle
         Rectangle::new([0.3, 0.3, 1.0, 1.0])
             .draw([0.0, 0.0, 120.0, 120.0],
                   &c.draw_state, c.transform,
-                  gl);
+                  g);
 
         // Draw background compass circle
         Ellipse::new([0.0, 0.0, 0.0, 1.0])
             .draw([0.0, 0.0, 120.0, 120.0],
                   &c.draw_state, c.transform,
-                  gl);
+                  g);
 
         // Draw triangle pointer thing
         {
@@ -80,7 +79,7 @@ impl Heading {
             Polygon::new([0.0, 1.0, 0.0, 1.0])
                 .draw(&[[0.0, -42.0 + -16.0], [4.0, -42.0 + 4.0], [-4.0, -42.0 + 4.0]],
                       &c.draw_state, c.transform,
-                      gl);
+                      g);
         }
     }
 

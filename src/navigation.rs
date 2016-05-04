@@ -5,36 +5,24 @@ use std::mem;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
 extern crate time;
-extern crate piston;
-#[macro_use] extern crate conrod;
+extern crate piston_window;
 extern crate graphics;
-extern crate opengl_graphics;
-extern crate glutin_window;
-#[macro_use] extern crate ffmpeg;
 extern crate image;
+#[macro_use] extern crate conrod;
+#[macro_use] extern crate ffmpeg;
 
-use conrod::{
-    Theme,
-    Ui,
-    Widget,
-};
-use opengl_graphics::{GlGraphics, OpenGL, Texture};
-use opengl_graphics::glyph_cache::GlyphCache;
-use piston::input;
-use piston::input::*;
-use piston::window::{WindowSettings, Size};
-use piston::event_loop::*;
-use glutin_window::GlutinWindow;
+use conrod::Theme;
+use piston_window::{EventLoop, Glyphs, PistonWindow, WindowSettings};
 
+use conrod_config::Ui;
 use nav_ui::NavigationUi;
 use video_stream::{init_ffmpeg, start_video_stream, VideoMsg};
 
-mod line_graph;
+mod conrod_config;
 mod nav_ui;
 mod video_stream;
 mod imu;
@@ -42,23 +30,16 @@ mod imu;
 fn main() {
     init_ffmpeg();
 
-    let opengl = OpenGL::V3_2;
-    let window = GlutinWindow::new(
-        WindowSettings::new(
-            "PISCES Navigation".to_string(),
-            Size { width: 1280, height: 700 }
-        )
-        .exit_on_esc(true)
-        .samples(4)
-    ).unwrap();
-    let window = Rc::new(RefCell::new(window));
-    let event_iter = window.clone().events().ups(20).max_fps(60);
-    let mut gl = GlGraphics::new(opengl);
+    let ref mut window: PistonWindow = WindowSettings::new("PISCES Navigation".to_string(),
+                                                           [1280, 700]).exit_on_esc(true)
+                                                                       .build().unwrap();
 
-    let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
-    let theme = Theme::default();
-    let glyph_cache = GlyphCache::new(&font_path).unwrap();
-    let mut ui = Ui::new(glyph_cache, theme);
+    let mut ui = {
+        let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
+        let theme = Theme::default();
+        let glyph_cache = Glyphs::new(&font_path, window.factory.clone());
+        Ui::new(glyph_cache.unwrap(), theme)
+    };
     
     // Create a UDP socket to talk to the rover
     let client = UdpSocket::bind("0.0.0.0:30002").unwrap();
@@ -96,11 +77,11 @@ fn main() {
     let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        start_video_stream(vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
+        start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
     let (video1_texture, video1_image) =
-        start_video_stream(vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
+        start_video_stream(window, vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
     let (video2_texture, video2_image) =
-        start_video_stream(vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
+        start_video_stream(window, vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
@@ -120,7 +101,12 @@ fn main() {
     
     ///////////////////////////////////////////////////////////////////////////////////////
 
-    for e in event_iter {
+    window.set_ups(10);
+    window.set_max_fps(60);
+
+    while let Some(e) = window.next() {
+        use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent, MouseCursorEvent};
+
         ui.handle_event(&e);
 
         e.mouse_cursor(|x, y| {
@@ -130,9 +116,10 @@ fn main() {
         
         e.press(|button| {
             match button {
-                input::Button::Keyboard(key) => nav_ui.on_key_pressed(key), 
-                input::Button::Mouse(b) => {
-                    if b == input::mouse::MouseButton::Left {
+                Button::Keyboard(key) => nav_ui.on_key_pressed(key), 
+                Button::Mouse(b) => {
+                    use piston_window::mouse::MouseButton;
+                    if b == MouseButton::Left {
                         if mouse_x >= 1280.0- 700.0-10.0 && mouse_x <= 1280.0-350.0-10.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
                             let tmp = vid_displays[0];
                             vid_displays[0] = vid_displays[1];
@@ -150,7 +137,7 @@ fn main() {
         
         e.release(|button| {
             match button {
-                input::Button::Keyboard(key) => nav_ui.on_key_released(key), 
+                Button::Keyboard(key) => nav_ui.on_key_released(key), 
                 _ => { },
             }
         });
@@ -162,42 +149,47 @@ fn main() {
             while let Ok(packet) = packet_r.try_recv() {
                 nav_ui.handle_packet(packet);
             }
+
+            ui.set_widgets(|ref mut ui| {
+                nav_ui.set_widgets(ui);
+            });
             
             let video0_image = video0_image.lock().unwrap();
-            vid_textures[0].update(&*video0_image);
+            vid_textures[0].update(&mut window.encoder, &video0_image);
             
-            let video1_image = video1_image.lock().unwrap();
-            vid_textures[1].update(&*video1_image);
+            /*let video1_image = video1_image.lock().unwrap();
+            vid_textures[1].update(&mut window.encoder, &video1_image);
             
             let video2_image = video2_image.lock().unwrap();
-            vid_textures[2].update(&*video2_image);
+            vid_textures[2].update(&mut window.encoder, &video2_image);*/
         });
-        
+
         // Render GUI
-        e.render(|args| {
-            gl.draw(args.viewport(), |c, gl| {
-                use graphics::*;
+        window.draw_2d(&e, |c, g| {
+            use graphics::*;
+
+            nav_ui.draw_ui(c, g, &mut ui);
+
+            Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
+                      &c.draw_state, c.transform,
+                      g);
+            image(&vid_textures[vid_displays[0]],
+                  c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/450.0, 400.0/450.0).transform, g);
             
-                nav_ui.draw_ui(c, gl, &mut ui);
-                
-                Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                    .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
-                          &c.draw_state, c.transform,
-                          gl);
-                image(&vid_textures[vid_displays[0]], c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/450.0, 400.0/450.0).transform, gl);
-                
-                Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                    .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
-                          &c.draw_state, c.transform,
-                          gl);
-                image(&vid_textures[vid_displays[1]], c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, gl);
-                
-                Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                    .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
-                          &c.draw_state, c.transform,
-                          gl);
-                image(&vid_textures[vid_displays[2]], c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, gl);
-            });
+            Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
+                      &c.draw_state, c.transform,
+                      g);
+            image(&vid_textures[vid_displays[1]],
+                  c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, g);
+            
+            Rectangle::new([0.0, 0.0, 0.4, 1.0])
+                .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
+                      &c.draw_state, c.transform,
+                      g);
+            image(&vid_textures[vid_displays[2]],
+                  c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, g);
         });
     }
 }

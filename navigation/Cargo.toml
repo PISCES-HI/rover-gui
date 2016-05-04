@@ -16,10 +16,8 @@ default-features = false
 [dependencies]
 
 time = "0.1.*"
-pistoncore-glutin_window = "0.17.1"
-piston = "0.15.1"
-piston2d-graphics = "0.11.0"
-piston2d-opengl_graphics = "0.19.0"
-image = "0.5.1"
-conrod = "0.22.0"
-#ffmpeg = "*"
+image = "0.9.0"
+
+piston_window = "0.43.0"
+piston2d-graphics = "0.16.0"
+conrod = "0.34.0"

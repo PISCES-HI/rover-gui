@@ -20,17 +20,20 @@ use ffmpeg::software::scaling;
 use ffmpeg::util::format::pixel::Pixel;
 use image::RgbaImage;
 
-use opengl_graphics::Texture;
+use piston_window::{PistonWindow, G2dTexture, TextureSettings};
 
 pub enum VideoMsg {
     Start(String),
     Stop,
 }
 
-pub fn start_video_stream(record_r: Receiver<VideoMsg>,
-                          path: &str) -> (Texture, Arc<Mutex<RgbaImage>>) {
+pub fn start_video_stream<'a>(window: &mut PistonWindow,
+                              record_r: Receiver<VideoMsg>,
+                              path: &str) -> (G2dTexture<'a>, Arc<Mutex<RgbaImage>>) {
     let rgba_img = RgbaImage::new(450, 450);
-    let video_texture = Texture::from_image(&rgba_img);
+    let video_texture = G2dTexture::from_image(&mut window.factory,
+                                               &rgba_img,
+                                               &TextureSettings::new()).unwrap();
     let rgba_img = Arc::new(Mutex::new(rgba_img));
 
     let path = path.to_string();
