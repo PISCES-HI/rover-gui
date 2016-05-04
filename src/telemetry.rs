@@ -12,46 +12,54 @@ use std::thread;
 #[macro_use]
 extern crate conrod;
 extern crate time;
-extern crate piston;
+//extern crate piston;
 extern crate graphics;
-extern crate opengl_graphics;
-extern crate glutin_window;
+//extern crate opengl_graphics;
+//extern crate glutin_window;
+extern crate piston_window;
 
 use conrod::{
     Theme,
-    Ui,
 };
-use opengl_graphics::{GlGraphics, OpenGL, Texture};
-use opengl_graphics::glyph_cache::GlyphCache;
-use piston::input;
-use piston::input::*;
-use piston::event_loop::*;
-use piston::window::{WindowSettings, Size};
-use glutin_window::GlutinWindow;
+//use opengl_graphics::{GlGraphics, OpenGL, Texture};
+//use opengl_graphics::GlGraphics;
+//use opengl_graphics::glyph_cache::GlyphCache;
+//use piston::input;
+//use piston::input::*;
+//use piston::event_loop::*;
+//use piston::window::{WindowSettings, Size};
+//use glutin_window::GlutinWindow;
+//use piston_window::{PistonWindow, Events, EventLoop};
+use piston_window::{EventLoop, Glyphs, PistonWindow, WindowSettings};
 
+use conrod_config::Ui;
 use tele_ui::TelemetryUi;
 
 pub mod avg_val;
+pub mod conrod_config;
 pub mod line_graph;
 pub mod tele_ui;
 
 fn main() {
-    let opengl = OpenGL::V3_2;
-    let window = GlutinWindow::new(
+    /*let window = GlutinWindow::new(
         WindowSettings::new(
             "PISCES Telemetry".to_string(),
             Size { width: 1280, height: 700 }
         )
         .exit_on_esc(true)
         .samples(4)
-    ).unwrap();
-    let window = Rc::new(RefCell::new(window));
-    let mut gl = GlGraphics::new(opengl);
+    ).unwrap();*/
+    let mut window: PistonWindow = WindowSettings::new("PISCES Telemetry".to_string(),
+                                                   [1280, 700]).exit_on_esc(true)
+                                                               .build().unwrap();
+    //let mut gl = GlGraphics::new(opengl);
 
-    let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
-    let theme = Theme::default();
-    let glyph_cache = GlyphCache::new(&font_path).unwrap();
-    let mut ui = Ui::new(glyph_cache, theme);
+    let mut ui = {
+        let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
+        let theme = Theme::default();
+        let glyph_cache = Glyphs::new(&font_path, window.factory.clone());
+        Ui::new(glyph_cache.unwrap(), theme)
+    };
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
@@ -80,23 +88,37 @@ fn main() {
 
     let mut last_update_time = time::now();
 
-    let event_iter = window.clone().events().ups(20).max_fps(60);
-    for e in event_iter {
+    window.set_ups(20);
+    window.set_max_fps(60);
+
+    //let event_iter = window.events().ups(20).max_fps(60);
+    //for e in event_iter {
+    while let Some(e) = window.next() {
+        use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent};
+
         ui.handle_event(&e);
         
-        e.press(|button| {
+        /*e.press(|button| {
+            use piston_window::Button;
             match button {
-                input::Button::Keyboard(key) => tele_ui.on_key_pressed(key), 
+                Button::Keyboard(key) => tele_ui.on_key_pressed(key), 
                 _ => { },
             }
-        });
+        });*/
+
+        if let Some(button) = e.press_args() {
+            match button {
+                Button::Keyboard(key) => tele_ui.on_key_pressed(key), 
+                _ => { },
+            }
+        }
         
-        e.release(|button| {
+        if let Some(button) = e.release_args() {
             match button {
-                input::Button::Keyboard(key) => tele_ui.on_key_released(key), 
+                Button::Keyboard(key) => tele_ui.on_key_released(key), 
                 _ => { },
             }
-        });
+        }
         
         // Update
         e.update(|_| {
@@ -112,10 +134,8 @@ fn main() {
         });
         
         // Render GUI
-        e.render(|args| {
-            gl.draw(args.viewport(), |c, gl| {
-                tele_ui.draw_ui(c, gl, &mut ui);
-            });
+        window.draw_2d(&e, |c, g| {
+            tele_ui.draw_ui(c, g, &mut ui);
         });
     }
 }

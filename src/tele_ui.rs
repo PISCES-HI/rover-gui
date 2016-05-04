@@ -5,28 +5,27 @@ use std::io::{BufWriter, Write};
 use std::ops::DerefMut;
 
 use conrod::{
+    self,
     Background,
     Button,
     Color,
     Colorable,
     Frameable,
-    Label,
     Labelable,
     Positionable,
     Slider,
     Sizeable,
-    Ui,
+    Text,
     WidgetId,
     Widget,
 };
-use conrod::color::{rgb, white};
-use graphics::Context;
-use opengl_graphics::GlGraphics;
-use opengl_graphics::glyph_cache::GlyphCache;
-use piston::input;
+use conrod::color::rgb;
+use graphics::{Context, Graphics};
+use piston_window;
 use time;
 
 use avg_val::AvgVal;
+use conrod_config;
 use line_graph::LineGraph;
 
 enum MissionTime {
@@ -260,24 +259,39 @@ impl TelemetryUi {
                self.altitude, self.temp).unwrap();
     }
 
-    pub fn draw_ui<'a>(&mut self, c: Context, gl: &mut GlGraphics, ui: &mut Ui<GlyphCache<'a>>) {
-        use graphics::*;
+    pub fn draw_ui<'a, G>(&mut self, c: Context, g: &mut G, ui: &mut conrod_config::Ui)
+                          where G: Graphics<Texture=<piston_window::G2d<'static> as conrod::Graphics>::Texture> {
+        use graphics::{Transformed};
 
         // Draw the background.
         Background::new().color(self.bg_color).set(ui);
 
+        ui.set_widgets(|ref mut ui| {
+            self.set_widgets(ui);
+        });
+
+        // Draw our UI!
+        ui.draw(c, g);
+
+        self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), g, &mut *ui.glyph_cache.borrow_mut());
+        self.a24_graph.draw(c.trans(ui.win_w - 405.0, 185.0), g, &mut *ui.glyph_cache.borrow_mut());
+        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), g, &mut *ui.glyph_cache.borrow_mut());
+        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), g, &mut *ui.glyph_cache.borrow_mut());
+    }
+
+    pub fn set_widgets(&mut self, ui: &mut conrod_config::UiCell) {
         let time_now = time::now();
 
         // Local time
-        Label::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
-            .xy((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 10.0)
+        Text::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
+            .x_y((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 10.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(LOCAL_TIME, ui);
 
         // UTC time
-        Label::new(format!("{}", time_now.to_utc().strftime("%Z  %x  %X").unwrap()).as_str())
-            .xy((-ui.win_w / 2.0) + 104.0, (ui.win_h / 2.0) - 30.0)
+        Text::new(format!("{}", time_now.to_utc().strftime("%Z  %x  %X").unwrap()).as_str())
+            .x_y((-ui.win_w / 2.0) + 104.0, (ui.win_h / 2.0) - 30.0)
             .font_size(16)
             .color(self.bg_color.plain_contrast())
             .set(UTC_TIME, ui);
@@ -298,8 +312,8 @@ impl TelemetryUi {
         let hours = total_hours - total_days*24;
         let minutes = total_minutes - total_hours*60;
         let seconds = total_seconds - total_minutes*60;
-        Label::new(format!("Mission Time: {}:{}:{}:{}", days, hours, minutes, seconds).as_str())
-            .xy((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 70.0)
+        Text::new(format!("Mission Time: {}:{}:{}:{}", days, hours, minutes, seconds).as_str())
+            .x_y((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 70.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(MISSION_TIME_LABEL, ui);
@@ -311,8 +325,8 @@ impl TelemetryUi {
                 MissionTime::Running(_, _) => "Pause",
             };
         Button::new()
-            .dimensions(100.0, 30.0)
-            .xy((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
+            .w_h(100.0, 30.0)
+            .x_y((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label(mission_start_text)
@@ -330,8 +344,8 @@ impl TelemetryUi {
 
         // Mission reset button
         Button::new()
-            .dimensions(100.0, 30.0)
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
+            .w_h(100.0, 30.0)
+            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label("Reset")
@@ -341,8 +355,8 @@ impl TelemetryUi {
             .set(MISSION_RESET_BUTTON, ui);
 
         // Time delay
-        Label::new("Time Delay: 0s")
-            .xy((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
+        Text::new("Time Delay: 0s")
+            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TIME_DELAY, ui);
@@ -350,16 +364,16 @@ impl TelemetryUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Power section
 
-        Label::new("Power")
-            .xy((-ui.win_w / 2.0) + 110.0, (ui.win_h / 2.0) - 190.0)
+        Text::new("Power")
+            .x_y((-ui.win_w / 2.0) + 110.0, (ui.win_h / 2.0) - 190.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(POWER_LABEL, ui);
 
         // 48 bus
 
-        Label::new(format!("48 Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 220.0)
+        Text::new(format!("48 Bus").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(H_48_LABEL, ui);
@@ -373,22 +387,22 @@ impl TelemetryUi {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
-        Label::new(h_48_v.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
+        Text::new(h_48_v.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(h_48_v_color)
             .set(H_48_V_VALUE, ui);
 
-        /*Label::new("NO DATA")
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
+        /*Text::new("NO DATA")
+            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(rgb(1.0, 0.0, 0.0))
             .set(H_48_A_VALUE, ui);*/
 
         // 24 bus
 
-        Label::new(format!("24 H-Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
+        Text::new(format!("24 H-Bus").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(H_24_LABEL, ui);
@@ -411,22 +425,22 @@ impl TelemetryUi {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
-        Label::new(h_24_v.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
+        Text::new(h_24_v.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
             .color(h_24_v_color)
             .set(H_24_V_VALUE, ui);
 
-        Label::new(h_24_a.as_str())
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
+        Text::new(h_24_a.as_str())
+            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
             .font_size(16)
             .color(h_24_a_color)
             .set(H_24_A_VALUE, ui);
 
         // P-12 E bus
 
-        Label::new(format!("P-12 E Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
+        Text::new(format!("P-12 E Bus").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 340.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(P_12_E_LABEL, ui);
@@ -449,22 +463,22 @@ impl TelemetryUi {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
-        Label::new(p_12_e_v.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
+        Text::new(p_12_e_v.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
             .color(p_12_e_v_color)
             .set(P_12_E_V_VALUE, ui);
 
-        Label::new(p_12_e_a.as_str())
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
+        Text::new(p_12_e_a.as_str())
+            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 360.0)
             .font_size(16)
             .color(p_12_e_a_color)
             .set(P_12_E_A_VALUE, ui);
 
         // P-12 PL bus
 
-        Label::new(format!("P-12 PL Bus").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
+        Text::new(format!("P-12 PL Bus").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(P_12_PL_LABEL, ui);
@@ -478,22 +492,22 @@ impl TelemetryUi {
                     ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
                 },
             };
-        Label::new(p_12_pl_v.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
+        Text::new(p_12_pl_v.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
             .color(p_12_pl_v_color)
             .set(P_12_PL_V_VALUE, ui);
 
-        /*Label::new(p_12_pl_a.as_str())
-            .xy((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
+        /*Text::new(p_12_pl_a.as_str())
+            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
             .color(p_12_pl_v_color)
             .set(P_12_PL_A_VALUE, ui);*/
 
         // Left motor
 
-        Label::new(format!("L Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
+        Text::new(format!("L Motor").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 460.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_POWER_LABEL, ui);
@@ -505,16 +519,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(l_motor_amp.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
+        Text::new(l_motor_amp.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
             .font_size(16)
             .color(l_motor_amp_color)
             .set(L_MOTOR_AMP_LABEL, ui);
 
         // Right motor
 
-        Label::new(format!("R Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 520.0)
+        Text::new(format!("R Motor").as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 520.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_POWER_LABEL, ui);
@@ -526,8 +540,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(r_motor_amp.as_str())
-            .xy((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
+        Text::new(r_motor_amp.as_str())
+            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
             .color(l_motor_amp_color)
             .set(R_MOTOR_AMP_LABEL, ui);
@@ -535,8 +549,8 @@ impl TelemetryUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // GPS section
 
-        Label::new("GPS")
-            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 50.0)
+        Text::new("GPS")
+            .x_y((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 50.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(GPS_LABEL, ui);
@@ -549,8 +563,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(latitude.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 75.0)
+        Text::new(latitude.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 75.0)
             .font_size(16)
             .color(latitude_color)
             .set(LATITUDE_LABEL, ui);
@@ -563,8 +577,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(longitude.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 95.0)
+        Text::new(longitude.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 95.0)
             .font_size(16)
             .color(longitude_color)
             .set(LONGITUDE_LABEL, ui);
@@ -577,8 +591,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(speed.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 115.0)
+        Text::new(speed.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 115.0)
             .font_size(16)
             .color(speed_color)
             .set(SPEED_LABEL, ui);
@@ -591,8 +605,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(gps_altitude.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 135.0)
+        Text::new(gps_altitude.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 135.0)
             .font_size(16)
             .color(gps_altitude_color)
             .set(GPS_ALTITUDE_LABEL, ui);
@@ -605,8 +619,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(angle.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 155.0)
+        Text::new(angle.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 155.0)
             .font_size(16)
             .color(angle_color)
             .set(ANGLE_LABEL, ui);
@@ -614,16 +628,16 @@ impl TelemetryUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Temp section
 
-        Label::new("Temp")
-            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 190.0)
+        Text::new("Temp")
+            .x_y((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 190.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(TEMP_LABEL, ui);
 
         // Left motor temp
 
-        Label::new(format!("L Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 220.0)
+        Text::new(format!("L Motor").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 220.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(L_MOTOR_TEMP_LABEL, ui);
@@ -635,16 +649,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(l_motor_temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 220.0)
+        Text::new(l_motor_temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 220.0)
             .font_size(16)
             .color(l_motor_temp_color)
             .set(L_MOTOR_C_LABEL, ui);
 
         // Right motor temp
 
-        Label::new(format!("R Motor").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 240.0)
+        Text::new(format!("R Motor").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 240.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(R_MOTOR_TEMP_LABEL, ui);
@@ -656,16 +670,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(r_motor_temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 240.0)
+        Text::new(r_motor_temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
             .color(r_motor_temp_color)
             .set(R_MOTOR_C_LABEL, ui);
 
         // Upper avionics box temp
 
-        Label::new(format!("Upper Avionics").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 260.0)
+        Text::new(format!("Upper Avionics").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 260.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(UPR_A_TEMP_LABEL, ui);
@@ -677,16 +691,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(upper_avionics_temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 260.0)
+        Text::new(upper_avionics_temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 260.0)
             .font_size(16)
             .color(upper_avionics_temp_color)
             .set(UPR_A_TEMP_VALUE, ui);
 
         // Lower avionics box temp
 
-        Label::new(format!("Ambient").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
+        Text::new(format!("Ambient").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(LWR_A_TEMP_LABEL, ui);
@@ -698,8 +712,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(lower_avionics_temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 280.0)
+        Text::new(lower_avionics_temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 280.0)
             .font_size(16)
             .color(lower_avionics_temp_color)
             .set(LWR_A_TEMP_VALUE, ui);
@@ -707,16 +721,16 @@ impl TelemetryUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Weather section
 
-        Label::new("Weather")
-            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 350.0)
+        Text::new("Weather")
+            .x_y((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 350.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_LABEL, ui);
 
         // Wind speed
 
-        Label::new(format!("Wind Speed").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
+        Text::new(format!("Wind Speed").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 380.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WIND_LABEL, ui);
@@ -728,16 +742,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(wind_speed.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
+        Text::new(wind_speed.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
             .font_size(16)
             .color(wind_speed_color)
             .set(WIND_VALUE, ui);
 
         // Altitude
 
-        Label::new(format!("Altitude").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 400.0)
+        Text::new(format!("Altitude").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 400.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(ALTITUDE_LABEL, ui);
@@ -749,16 +763,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(altitude.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 400.0)
+        Text::new(altitude.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 400.0)
             .font_size(16)
             .color(altitude_color)
             .set(ALTITUDE_VALUE, ui);
 
         // Pressure
 
-        Label::new(format!("Pressure").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 420.0)
+        Text::new(format!("Pressure").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 420.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(PRESSURE_LABEL, ui);
@@ -770,16 +784,16 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(pressure.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 420.0)
+        Text::new(pressure.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 420.0)
             .font_size(16)
             .color(pressure_color)
             .set(PRESSURE_VALUE, ui);
 
         // Temp
 
-        Label::new(format!("Temp").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 440.0)
+        Text::new(format!("Temp").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 440.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(WEATHER_TEMP_LABEL, ui);
@@ -791,8 +805,8 @@ impl TelemetryUi {
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
-        Label::new(temp.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 440.0)
+        Text::new(temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 440.0)
             .font_size(16)
             .color(temp_color)
             .set(WEATHER_TEMP_VALUE, ui);
@@ -800,8 +814,8 @@ impl TelemetryUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // IMU section
 
-        Label::new("IMU")
-            .xy((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 500.0)
+        Text::new("IMU")
+            .x_y((-ui.win_w / 2.0) + 410.0, (ui.win_h / 2.0) - 500.0)
             .font_size(20)
             .color(self.bg_color.plain_contrast())
             .set(IMU_LABEL, ui);
@@ -818,75 +832,67 @@ impl TelemetryUi {
 
         // IMU pitch
 
-        Label::new(format!("Pitch").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 530.0)
+        Text::new(format!("Pitch").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 530.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_PITCH_LABEL, ui);
 
-        Label::new(pitch.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 530.0)
+        Text::new(pitch.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 530.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_PITCH_VALUE, ui);
 
         // IMU roll
 
-        Label::new(format!("Roll").as_str())
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 550.0)
+        Text::new(format!("Roll").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 550.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_ROLL_LABEL, ui);
 
-        Label::new(roll.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 550.0)
+        Text::new(roll.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 550.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_ROLL_VALUE, ui);
 
         // IMU heading
 
-        Label::new("Heading")
-            .xy((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 570.0)
+        Text::new("Heading")
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 570.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(IMU_HEADING_LABEL, ui);
 
-        Label::new(heading.as_str())
-            .xy((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 570.0)
+        Text::new(heading.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 570.0)
             .font_size(16)
             .color(imu_color)
             .set(IMU_HEADING_VALUE, ui);
 
         // Trend graph labels
-        Label::new("H-48 V")
-            .xy((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 90.0)
+        Text::new("H-48 V")
+            .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 90.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TREND_H_48V_LABEL, ui);
-        Label::new("H-24 A")
-            .xy((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 270.0)
+        Text::new("H-24 A")
+            .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 270.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TREND_H_24A_LABEL, ui);
-        Label::new("P-12 E V")
-            .xy((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 450.0)
+        Text::new("P-12 E V")
+            .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 450.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TREND_P_12_E_V_LABEL, ui);
-        Label::new("LR Motor Temp")
-            .xy((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 630.0)
+        Text::new("LR Motor Temp")
+            .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 630.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TREND_LR_MOTOR_TEMP_LABEL, ui);
-
-        // Draw our UI!
-        ui.draw(c, gl);
-
-        self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), gl, &mut *ui.glyph_cache.borrow_mut());
-        self.a24_graph.draw(c.trans(ui.win_w - 405.0, 185.0), gl, &mut *ui.glyph_cache.borrow_mut());
-        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), gl, &mut *ui.glyph_cache.borrow_mut());
-        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), gl, &mut *ui.glyph_cache.borrow_mut());
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -999,13 +1005,13 @@ impl TelemetryUi {
         }
     }
 
-    pub fn on_key_pressed(&mut self, key: input::Key) {
+    pub fn on_key_pressed(&mut self, key: piston_window::Key) {
         match key {
             _ => { },
         }
     }
 
-    pub fn on_key_released(&mut self, key: input::Key) {
+    pub fn on_key_released(&mut self, key: piston_window::Key) {
         match key {
             _ => { },
         }

@@ -1,6 +1,5 @@
-use graphics::Context;
-use opengl_graphics::GlGraphics;
-use opengl_graphics::glyph_cache::GlyphCache;
+use graphics::{Context, Graphics};
+use graphics::character::CharacterCache;
 
 struct Line {
     color: [f32; 4],
@@ -33,29 +32,30 @@ impl LineGraph {
         }
     }
     
-    pub fn draw(&self, c: Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
+    pub fn draw<G: Graphics, C>(&self, c: Context, g: &mut G, character_cache: &mut C)
+                                                where C: CharacterCache<Texture=G::Texture> {
         use graphics::*;
         
         Rectangle::new([0.3, 0.3, 1.0, 1.0])
             .draw([0.0, 0.0, self.size.0, self.size.1],
                   &c.draw_state, c.transform,
-                  gl);
+                  g);
 
         {
             // Draw upper scale
             let c = c.trans(2.0, 2.0+12.0);
             Text::new_color([1.0; 4], 12).draw(format!("{}", self.y_interval.1).as_str(),
-                                             glyph_cache,
+                                             character_cache,
                                              &c.draw_state, c.transform,
-                                             gl);
+                                             g);
         }
         {
             // Draw lower scale
             let c = c.trans(2.0, self.size.1 - 2.0);
             Text::new_color([1.0; 4], 12).draw(format!("{}", self.y_interval.0).as_str(),
-                                             glyph_cache,
+                                             character_cache,
                                              &c.draw_state, c.transform,
-                                             gl);
+                                             g);
         }
         
         for line in &self.lines {
@@ -74,7 +74,7 @@ impl LineGraph {
                         .draw([last_x_norm * self.size.0, self.size.1 - last_y_norm*self.size.1,
                                x_norm * self.size.0, self.size.1 - y_norm*self.size.1],
                               &c.draw_state, c.transform,
-                              gl);
+                              g);
                 }
             }
         }
