@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io;
 use std::io::{BufWriter, Write};
-use std::ops::DerefMut;
 
 use conrod::{
     self,
@@ -13,10 +11,8 @@ use conrod::{
     Frameable,
     Labelable,
     Positionable,
-    Slider,
     Sizeable,
     Text,
-    WidgetId,
     Widget,
 };
 use conrod::color::rgb;
@@ -543,7 +539,7 @@ impl TelemetryUi {
         Text::new(r_motor_amp.as_str())
             .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
             .font_size(16)
-            .color(l_motor_amp_color)
+            .color(r_motor_amp_color)
             .set(R_MOTOR_AMP_LABEL, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////

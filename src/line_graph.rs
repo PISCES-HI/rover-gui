@@ -59,7 +59,7 @@ impl LineGraph {
         }
         
         for line in &self.lines {
-            for i in (1..line.points.len()) {
+            for i in 1..line.points.len() {
                 let (x, y) = line.points[i];
                 let (last_x, last_y) = line.points[i - 1];
                 

@@ -1,35 +1,20 @@
 #![feature(iter_arith)]
 
-use std::cell::RefCell;
 use std::fs;
 use std::net::UdpSocket;
 use std::path::Path;
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
 #[macro_use]
 extern crate conrod;
 extern crate time;
-//extern crate piston;
 extern crate graphics;
-//extern crate opengl_graphics;
-//extern crate glutin_window;
 extern crate piston_window;
 
 use conrod::{
     Theme,
 };
-//use opengl_graphics::{GlGraphics, OpenGL, Texture};
-//use opengl_graphics::GlGraphics;
-//use opengl_graphics::glyph_cache::GlyphCache;
-//use piston::input;
-//use piston::input::*;
-//use piston::event_loop::*;
-//use piston::window::{WindowSettings, Size};
-//use glutin_window::GlutinWindow;
-//use piston_window::{PistonWindow, Events, EventLoop};
 use piston_window::{EventLoop, Glyphs, PistonWindow, WindowSettings};
 
 use conrod_config::Ui;
@@ -41,18 +26,9 @@ pub mod line_graph;
 pub mod tele_ui;
 
 fn main() {
-    /*let window = GlutinWindow::new(
-        WindowSettings::new(
-            "PISCES Telemetry".to_string(),
-            Size { width: 1280, height: 700 }
-        )
-        .exit_on_esc(true)
-        .samples(4)
-    ).unwrap();*/
     let mut window: PistonWindow = WindowSettings::new("PISCES Telemetry".to_string(),
-                                                   [1280, 700]).exit_on_esc(true)
-                                                               .build().unwrap();
-    //let mut gl = GlGraphics::new(opengl);
+                                                       [1280, 700]).exit_on_esc(true)
+                                                                   .build().unwrap();
 
     let mut ui = {
         let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
@@ -63,7 +39,7 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
-    socket.send_to(b"connect me plz", ("10.10.155.165", 30001));
+    socket.send_to(b"connect me plz", ("10.10.155.165", 30001)).unwrap();
     
     let in_socket = socket;
     let (packet_t, packet_r) = channel();
@@ -81,7 +57,7 @@ fn main() {
         }).unwrap();
     
     let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
-    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
+    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str()).unwrap();
     let mut tele_ui = TelemetryUi::new(mission_folder.as_str());
     
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -91,34 +67,24 @@ fn main() {
     window.set_ups(20);
     window.set_max_fps(60);
 
-    //let event_iter = window.events().ups(20).max_fps(60);
-    //for e in event_iter {
     while let Some(e) = window.next() {
         use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent};
 
         ui.handle_event(&e);
         
-        /*e.press(|button| {
-            use piston_window::Button;
+        e.press(|button| {
             match button {
                 Button::Keyboard(key) => tele_ui.on_key_pressed(key), 
                 _ => { },
             }
-        });*/
+        });
 
-        if let Some(button) = e.press_args() {
-            match button {
-                Button::Keyboard(key) => tele_ui.on_key_pressed(key), 
-                _ => { },
-            }
-        }
-        
-        if let Some(button) = e.release_args() {
+        e.release(|button| {
             match button {
                 Button::Keyboard(key) => tele_ui.on_key_released(key), 
                 _ => { },
             }
-        }
+        });
         
         // Update
         e.update(|_| {
