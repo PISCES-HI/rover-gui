@@ -149,24 +149,24 @@ fn main() {
             while let Ok(packet) = packet_r.try_recv() {
                 nav_ui.handle_packet(packet);
             }
-
-            ui.set_widgets(|ref mut ui| {
-                nav_ui.set_widgets(ui);
-            });
             
             let video0_image = video0_image.lock().unwrap();
             vid_textures[0].update(&mut window.encoder, &video0_image);
             
-            /*let video1_image = video1_image.lock().unwrap();
+            let video1_image = video1_image.lock().unwrap();
             vid_textures[1].update(&mut window.encoder, &video1_image);
             
-            let video2_image = video2_image.lock().unwrap();
-            vid_textures[2].update(&mut window.encoder, &video2_image);*/
+            //let video2_image = video2_image.lock().unwrap();
+            //vid_textures[2].update(&mut window.encoder, &video2_image);
         });
 
         // Render GUI
         window.draw_2d(&e, |c, g| {
             use graphics::*;
+
+            ui.set_widgets(|ref mut ui| {
+                nav_ui.set_widgets(ui);
+            });
 
             nav_ui.draw_ui(c, g, &mut ui);
 
