@@ -156,8 +156,8 @@ fn main() {
             let video1_image = video1_image.lock().unwrap();
             vid_textures[1].update(&mut window.encoder, &video1_image);
             
-            //let video2_image = video2_image.lock().unwrap();
-            //vid_textures[2].update(&mut window.encoder, &video2_image);
+            let video2_image = video2_image.lock().unwrap();
+            vid_textures[2].update(&mut window.encoder, &video2_image);
         });
 
         // Render GUI

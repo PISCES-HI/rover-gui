@@ -665,6 +665,7 @@ impl NavigationUi {
             }
             Up => {
                 // Forward
+                println!("foo");
                 self.l_rpm = 100.0*self.motor_speed;
                 self.r_rpm = 100.0*self.motor_speed;
                 self.send_lr_rpm();

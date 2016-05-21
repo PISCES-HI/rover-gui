@@ -99,9 +99,10 @@ pub struct TelemetryUi {
     l_motor_temp_limits: RygLimit,
     r_motor_temp_limits: RygLimit,
 
-    // Avionics box temp
+    // Temperature sensors
     upper_avionics_temp: AvgVal,
     lower_avionics_temp: AvgVal,
+    ambient_temp: AvgVal,
     upper_avionics_temp_limits: RygLimit,
     lower_avionics_temp_limits: RygLimit,
 
@@ -208,8 +209,9 @@ impl TelemetryUi {
             l_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
             r_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
 
-            upper_avionics_temp: AvgVal::new(60),
-            lower_avionics_temp: AvgVal::new(60),
+            upper_avionics_temp: AvgVal::new(30),
+            lower_avionics_temp: AvgVal::new(30),
+            ambient_temp: AvgVal::new(30),
             upper_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
             lower_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
 
@@ -695,7 +697,7 @@ impl TelemetryUi {
 
         // Lower avionics box temp
 
-        Text::new(format!("Ambient").as_str())
+        Text::new(format!("Lower Avionics").as_str())
             .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
@@ -713,6 +715,27 @@ impl TelemetryUi {
             .font_size(16)
             .color(lower_avionics_temp_color)
             .set(LWR_A_TEMP_VALUE, ui);
+
+        // Ambient temp
+
+        Text::new(format!("Ambient").as_str())
+            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(18)
+            .color(self.bg_color.plain_contrast())
+            .set(AMBIENT_TEMP_LABEL, ui);
+
+        let (ambient_temp, ambient_temp_color) =
+            match self.ambient_temp.get() {
+                Some(temp) => {
+                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
+                },
+                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+            };
+        Text::new(ambient_temp.as_str())
+            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 300.0)
+            .font_size(16)
+            .color(ambient_temp_color)
+            .set(AMBIENT_TEMP_VALUE, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Weather section
@@ -962,6 +985,9 @@ impl TelemetryUi {
                 "LWR_A_TEMP" => {
                     self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
                 },
+                "AMBIENT_TEMP" => {
+                    self.ambient_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
+                },
                 "W_TEMP" => {
                     let temp = packet_parts[1].parse().unwrap();
                     self.temp = Some(temp);
@@ -1072,6 +1098,9 @@ widget_ids! {
 
     LWR_A_TEMP_LABEL,
     LWR_A_TEMP_VALUE,
+
+    AMBIENT_TEMP_LABEL,
+    AMBIENT_TEMP_VALUE,
 
     // Weather section
     WEATHER_LABEL,
