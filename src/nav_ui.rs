@@ -42,6 +42,7 @@ pub struct NavigationUi {
 
     // IMU
     pitch_roll_heading: Option<(f64, f64, f64)>,
+    pitch: imu::Roll,
     roll: imu::Roll,
     heading: imu::Heading,
 
@@ -99,6 +100,7 @@ impl NavigationUi {
             mission_time: MissionTime::Paused(time::Duration::zero()),
 
             pitch_roll_heading: None,
+            pitch: imu::Roll::new(),
             roll: imu::Roll::new(),
             heading: imu::Heading::new(),
 
@@ -162,6 +164,7 @@ impl NavigationUi {
         ui.draw(c, g);
 
         // Draw other stuff
+        self.pitch.draw(c.trans(20.0, 215.0), g);
         self.roll.draw(c.trans(170.0, 215.0), g);
         self.heading.draw(c.trans(320.0, 215.0), g);
     }
@@ -633,6 +636,7 @@ impl NavigationUi {
                     }
                     heading = 360.0 - heading;
                     self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                    self.pitch.set_angle(pitch);
                     self.roll.set_angle(roll);
                     self.heading.set_angle(heading);
                 },
