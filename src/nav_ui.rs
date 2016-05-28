@@ -625,18 +625,23 @@ impl NavigationUi {
                     let my: f64 = packet_parts[8].parse().unwrap();
                     let mz: f64 = packet_parts[9].parse().unwrap();
 
+                    let (ax, ay, az) = (ay, -az, ax);
+
                     let roll = f64::atan2(ay, az);
                     let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
                     let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
                                              mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
+                    let roll = roll.to_degrees();
+                    let pitch = pitch.to_degrees();
+                    let heading = heading.to_degrees();
 
-                    let mut heading = heading.to_degrees();
+                    let mut heading = heading;
                     if heading < 0.0 {
                         heading += 360.0;
                     }
                     heading = 360.0 - heading;
-                    self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
-                    self.pitch.set_angle(pitch);
+                    self.pitch_roll_heading = Some((pitch, roll, heading));
+                    self.pitch.set_angle(-pitch);
                     self.roll.set_angle(roll);
                     self.heading.set_angle(heading);
                 },
