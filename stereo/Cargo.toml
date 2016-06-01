@@ -1,0 +1,23 @@
+[package]
+name = "stereo"
+version = "0.1.0"
+authors = ["Ara Uhr"]
+
+[[bin]]
+
+name="stereo"
+path="../src/stereo.rs"
+
+[dependencies.ffmpeg]
+git = "https://github.com/meh/rust-ffmpeg"
+features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+default-features = false
+
+[dependencies]
+
+time = "0.1.*"
+image = "0.9.0"
+
+piston_window = "0.43.0"
+piston2d-graphics = "0.16.0"
+conrod = "0.34.0"
