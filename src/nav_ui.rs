@@ -626,6 +626,7 @@ impl NavigationUi {
                     let mz: f64 = packet_parts[9].parse().unwrap();
 
                     let (ax, ay, az) = (ay, -az, ax);
+                    let (mx, my, mz) = (my, -mz, mx);
 
                     let roll = f64::atan2(ay, az);
                     let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
