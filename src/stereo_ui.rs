@@ -162,11 +162,6 @@ impl StereoUi {
 
         // Draw our UI!
         ui.draw(c, g);
-
-        // Draw other stuff
-        self.pitch.draw(c.trans(20.0, 215.0), g);
-        self.roll.draw(c.trans(170.0, 215.0), g);
-        self.heading.draw(c.trans(320.0, 215.0), g);
     }
 
     pub fn set_widgets(&mut self, ui: &mut conrod_config::UiCell) {
@@ -278,201 +273,6 @@ impl StereoUi {
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // IMU section
-
-        Text::new("IMU")
-            .x_y((-ui.win_w / 2.0) + 100.0, (ui.win_h / 2.0) - 190.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(IMU_LABEL, ui);
-
-        let (pitch, roll, heading, imu_color) =
-            match self.pitch_roll_heading {
-                Some((pitch, roll, heading)) => (format!("{0:.1}", pitch),
-                                                 format!("{0:.1}", roll),
-                                                 format!("{0:.1}", heading),
-                                                 rgb(0.0, 1.0, 0.0)),
-                None => ("NO DATA".to_string(), "NO DATA".to_string(),
-                         "NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-
-        // IMU pitch
-
-        Text::new(format!("Pitch").as_str())
-            .x_y((-ui.win_w / 2.0) + 40.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(IMU_PITCH_LABEL, ui);
-
-        Text::new(pitch.as_str())
-            .x_y((-ui.win_w / 2.0) + 120.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(16)
-            .color(imu_color)
-            .set(IMU_PITCH_VALUE, ui);
-
-        // IMU roll
-
-        Text::new(format!("Roll").as_str())
-            .x_y((-ui.win_w / 2.0) + 190.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(IMU_ROLL_LABEL, ui);
-
-        Text::new(roll.as_str())
-            .x_y((-ui.win_w / 2.0) + 250.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(16)
-            .color(imu_color)
-            .set(IMU_ROLL_VALUE, ui);
-
-        // IMU heading
-
-        Text::new("Heading")
-            .x_y((-ui.win_w / 2.0) + 340.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(IMU_HEADING_LABEL, ui);
-
-        Text::new(heading.as_str())
-            .x_y((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 350.0)
-            .font_size(16)
-            .color(imu_color)
-            .set(IMU_HEADING_VALUE, ui);
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // GPS section
-
-        Text::new("GPS")
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 400.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(GPS_LABEL, ui);
-
-        // Latitude label
-        let (latitude, latitude_color) =
-            match self.latitude {
-                Some(lat) => {
-                    (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-        Text::new(latitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 425.0)
-            .font_size(16)
-            .color(latitude_color)
-            .set(LATITUDE_LABEL, ui);
-
-        // Longitude label
-        let (longitude, longitude_color) =
-            match self.longitude {
-                Some(lng) => {
-                    (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-        Text::new(longitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 445.0)
-            .font_size(16)
-            .color(longitude_color)
-            .set(LONGITUDE_LABEL, ui);
-
-        // Speed label
-        let (speed, speed_color) =
-            match self.speed {
-                Some(speed) => {
-                    (format!("{0:.2} m/s", speed), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-        Text::new(speed.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 465.0)
-            .font_size(16)
-            .color(speed_color)
-            .set(SPEED_LABEL, ui);
-
-        // Altitude label
-        let (altitude, altitude_color) =
-            match self.altitude {
-                Some(alt) => {
-                    (format!("{0:.2} m", alt), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-        Text::new(altitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 485.0)
-            .font_size(16)
-            .color(altitude_color)
-            .set(ALTITUDE_LABEL, ui);
-
-        // Angle label
-        let (angle, angle_color) =
-            match self.angle {
-                Some(angle) => {
-                    (format!("{0:.2} deg", angle), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
-            };
-        Text::new(angle.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 505.0)
-            .font_size(16)
-            .color(angle_color)
-            .set(ANGLE_LABEL, ui);
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        // Left RPM slider
-        Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
-            .w_h(150.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 410.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("L Motor")
-            .label_color(WHITE)
-            .react(|new_rpm| {
-                self.try_update_l_rpm(new_rpm);
-            })
-            .set(L_RPM_SLIDER, ui);
-
-        // Right RPM slider
-        Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
-            .w_h(150.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 450.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("R Motor")
-            .label_color(WHITE)
-            .react(|new_rpm| {
-                self.try_update_r_rpm(new_rpm);
-            })
-            .set(R_RPM_SLIDER, ui);
-
-        // Stop button
-        Button::new()
-            .w_h(100.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 490.0)
-            .rgb(1.0, 0.0, 0.0)
-            .frame(1.0)
-            .label("Stop")
-            .react(|| {
-                self.l_rpm = 0.0;
-                self.r_rpm = 0.0;
-                self.send_l_rpm();
-                self.send_r_rpm();
-                self.send_brake();
-            })
-            .set(STOP_BUTTON, ui);
-
-        // Motor speed slider
-        Slider::new(self.motor_speed, 0.0, 1.0)
-            .w_h(150.0, 30.0)
-            .x_y(420.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 425.0)
-            .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
-            .label("Motor Speed")
-            .label_color(WHITE)
-            .react(|new_speed| {
-                self.motor_speed = new_speed;
-            })
-            .set(MOTOR_SPEED_SLIDER, ui);
         
         // Camera pan slider
         Slider::new(self.f_pan, 0.0, 180.0)
@@ -501,54 +301,7 @@ impl StereoUi {
             .set(F_TILT_SLIDER, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // SADL
-        Text::new("SADL")
-            .x_y(50.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(SADL_LABEL, ui);
-        Button::new()
-            .x_y(120.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Up")
-            .react(|| { self.sadl = 100.0; self.send_sadl(); })
-            .set(SADL_UP, ui);
-        Button::new()
-            .x_y(185.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Down")
-            .react(|| { self.sadl = -100.0; self.send_sadl(); })
-            .set(SADL_DOWN, ui);
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // Blade
-        Text::new("Blade")
-            .x_y(300.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(BLADE_LABEL, ui);
-        Button::new()
-            .x_y(370.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Up")
-            .react(|| { self.blade = 100.0; self.send_blade(); })
-            .set(BLADE_UP, ui);
-        Button::new()
-            .x_y(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Down")
-            .react(|| { self.blade = -100.0; self.send_blade(); })
-            .set(BLADE_DOWN, ui);
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
+       
         // Command section
         Text::new("Command")
             .x_y(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 580.0)
@@ -607,45 +360,6 @@ impl StereoUi {
             let packet_parts: Vec<String> = packet.split(":").map(|s| s.to_string()).collect();
 
             match packet_parts[0].as_str() {
-                "GPS" => {
-                    if packet_parts.len() == 6 {
-                        self.latitude = packet_parts[1].parse().ok();
-                        self.longitude = packet_parts[2].parse().ok();
-                        self.speed = packet_parts[3].parse().ok();
-                        self.altitude = packet_parts[4].parse().ok();
-                        self.angle = packet_parts[5].parse().ok();
-                    }
-                },
-                "IMU" => {
-                    let ax: f64 = packet_parts[1].parse().unwrap();
-                    let ay: f64 = packet_parts[2].parse().unwrap();
-                    let az: f64 = packet_parts[3].parse().unwrap();
-
-                    let mx: f64 = packet_parts[7].parse().unwrap();
-                    let my: f64 = packet_parts[8].parse().unwrap();
-                    let mz: f64 = packet_parts[9].parse().unwrap();
-
-                    let (ax, ay, az) = (ay, -az, ax);
-                    let (mx, my, mz) = (my, -mz, mx);
-
-                    let roll = f64::atan2(ay, az);
-                    let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
-                    let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
-                                             mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
-                    let roll = roll.to_degrees();
-                    let pitch = pitch.to_degrees();
-                    let heading = heading.to_degrees();
-
-                    let mut heading = heading;
-                    if heading < 0.0 {
-                        heading += 360.0;
-                    }
-                    heading = 360.0 - heading;
-                    self.pitch_roll_heading = Some((pitch, roll, heading));
-                    self.pitch.set_angle(-pitch);
-                    self.roll.set_angle(roll);
-                    self.heading.set_angle(heading);
-                },
                 _ => { /*println!("WARNING: Unknown packet ID: {}", packet_parts[0])*/ },
             }
         }
@@ -909,30 +623,6 @@ widget_ids! {
     TIME_DELAY,
     TIME_DELAY_VALUE,
 
-    // IMU section
-    IMU_LABEL,
-
-    IMU_PITCH_LABEL,
-    IMU_PITCH_VALUE,
-
-    IMU_ROLL_LABEL,
-    IMU_ROLL_VALUE,
-
-    IMU_HEADING_LABEL,
-    IMU_HEADING_VALUE,
-
-    // GPS section
-    GPS_LABEL,
-    LATITUDE_LABEL,
-    LONGITUDE_LABEL,
-    SPEED_LABEL,
-    ALTITUDE_LABEL,
-    ANGLE_LABEL,
-
-    L_RPM_SLIDER,
-    R_RPM_SLIDER,
-    MOTOR_SPEED_SLIDER,
-    STOP_BUTTON,
     F_PAN_SLIDER,
     F_TILT_SLIDER,
     COMMAND_LABEL,
