@@ -382,7 +382,7 @@ impl TelemetryUi {
                     (format!("{0:.2}V", v), self.h_48_v_limits.get_color(v))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         Text::new(h_48_v.as_str())
@@ -394,7 +394,7 @@ impl TelemetryUi {
         /*Text::new("NO DATA")
             .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 240.0)
             .font_size(16)
-            .color(rgb(1.0, 0.0, 0.0))
+            .color(rgb(0.0, 0.0, 0.0))
             .set(H_48_A_VALUE, ui);*/
 
         // 24 bus
@@ -411,7 +411,7 @@ impl TelemetryUi {
                     (format!("{0:.2}V", v), self.h_24_v_limits.get_color(v))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         let (h_24_a, h_24_a_color) =
@@ -420,7 +420,7 @@ impl TelemetryUi {
                     (format!("{0:.2}A", a), rgb(0.0, 1.0, 0.0))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         Text::new(h_24_v.as_str())
@@ -449,7 +449,7 @@ impl TelemetryUi {
                     (format!("{0:.2}V", v), self.p_12_e_v_limits.get_color(v))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         let (p_12_e_a, p_12_e_a_color) =
@@ -458,7 +458,7 @@ impl TelemetryUi {
                     (format!("{0:.2}A", a), rgb(0.0, 1.0, 0.0))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         Text::new(p_12_e_v.as_str())
@@ -487,7 +487,7 @@ impl TelemetryUi {
                     (format!("{0:.2}V", v), self.p_12_pl_v_limits.get_color(v))
                 },
                 None => {
-                    ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0))
+                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
                 },
             };
         Text::new(p_12_pl_v.as_str())
@@ -515,7 +515,7 @@ impl TelemetryUi {
                 Some(amp) => {
                     (format!("{0:.2}A", amp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(l_motor_amp.as_str())
             .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 480.0)
@@ -536,7 +536,7 @@ impl TelemetryUi {
                 Some(amp) => {
                     (format!("{0:.2}A", amp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(r_motor_amp.as_str())
             .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 540.0)
@@ -559,7 +559,7 @@ impl TelemetryUi {
                 Some(lat) => {
                     (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(latitude.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 75.0)
@@ -573,7 +573,7 @@ impl TelemetryUi {
                 Some(lng) => {
                     (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(longitude.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 95.0)
@@ -587,7 +587,7 @@ impl TelemetryUi {
                 Some(speed) => {
                     (format!("{0:.2} m/s", speed), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(speed.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 115.0)
@@ -601,7 +601,7 @@ impl TelemetryUi {
                 Some(alt) => {
                     (format!("{0:.2} m", alt), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(gps_altitude.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 135.0)
@@ -615,7 +615,7 @@ impl TelemetryUi {
                 Some(angle) => {
                     (format!("{0:.2} deg", angle), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(angle.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 155.0)
@@ -645,7 +645,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), self.l_motor_temp_limits.get_color(temp))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(l_motor_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 220.0)
@@ -666,7 +666,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), self.r_motor_temp_limits.get_color(temp))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(r_motor_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 240.0)
@@ -687,7 +687,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), self.upper_avionics_temp_limits.get_color(temp))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(upper_avionics_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 260.0)
@@ -708,7 +708,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), self.lower_avionics_temp_limits.get_color(temp))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(lower_avionics_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 280.0)
@@ -729,7 +729,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(ambient_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 300.0)
@@ -759,7 +759,7 @@ impl TelemetryUi {
                 Some(wind_speed) => {
                     (format!("{0:.2} m/s", wind_speed), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(wind_speed.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 380.0)
@@ -780,7 +780,7 @@ impl TelemetryUi {
                 Some(alt) => {
                     (format!("{0:.2} ft", alt), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(altitude.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 400.0)
@@ -801,7 +801,7 @@ impl TelemetryUi {
                 Some(pressure) => {
                     (format!("{0:.2} hPa", pressure), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(pressure.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 420.0)
@@ -822,7 +822,7 @@ impl TelemetryUi {
                 Some(temp) => {
                     (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
                 },
-                None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
         Text::new(temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 440.0)
@@ -846,7 +846,7 @@ impl TelemetryUi {
                                                  format!("{0:.1}", heading),
                                                  rgb(0.0, 1.0, 0.0)),
                 None => ("NO DATA".to_string(), "NO DATA".to_string(),
-                         "NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
+                         "NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
 
         // IMU pitch
@@ -1010,17 +1010,25 @@ impl TelemetryUi {
                     let my: f64 = packet_parts[8].parse().unwrap_or(0.0);
                     let mz: f64 = packet_parts[9].parse().unwrap_or(0.0);
 
+                    let (ax, ay, az) = (ay, -az, ax);
+                    let (mx, my, mz) = (my, -mz, mx);
+
                     let roll = f64::atan2(ay, az);
                     let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
                     let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
                                              mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
 
                     let mut heading = heading.to_degrees();
+                    let mut roll = roll.to_degrees() + 180.0;
+                    let pitch = pitch.to_degrees();
                     if heading < 0.0 {
                         heading += 360.0;
                     }
+                    if roll >= 180.0 {
+                        roll -= 360.0;
+                    }
                     heading = 360.0 - heading;
-                    self.pitch_roll_heading = Some((pitch.to_degrees(), roll.to_degrees(), heading));
+                    self.pitch_roll_heading = Some((pitch, roll, heading));
                 },
                 _ => { println!("WARNING: Unknown packet ID: {}", packet_parts[0]) },
             }

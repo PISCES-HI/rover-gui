@@ -632,7 +632,7 @@ impl NavigationUi {
                     let pitch = f64::atan2(-ax, ay*f64::sin(roll) + az*f64::cos(roll));
                     let heading = f64::atan2(mz*f64::sin(roll) - my*f64::cos(roll),
                                              mx*f64::cos(pitch) + my*f64::sin(pitch)*f64::sin(roll) + mz*f64::sin(pitch)*f64::cos(roll));
-                    let roll = roll.to_degrees();
+                    let mut roll = roll.to_degrees() + 180.0;
                     let pitch = pitch.to_degrees();
                     let heading = heading.to_degrees();
 
@@ -641,6 +641,9 @@ impl NavigationUi {
                         heading += 360.0;
                     }
                     heading = 360.0 - heading;
+                    if roll >= 180.0 {
+                        roll -= 360.0;
+                    }
                     self.pitch_roll_heading = Some((pitch, roll, heading));
                     self.pitch.set_angle(-pitch);
                     self.roll.set_angle(roll);
