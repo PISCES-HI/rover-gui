@@ -66,12 +66,12 @@ pub struct StereoUi {
     pub blade: f32,
 
     // Forward camera controls
-    pub f_pan: f32,
-    pub f_panning: f32,
-    pub last_f_pan_time: time::Tm,
-    pub f_tilt: f32,
-    pub f_tilting: f32,
-    pub last_f_tilt_time: time::Tm,
+    pub pan: f32,
+    pub panning: f32,
+    pub last_pan_time: time::Tm,
+    pub tilt: f32,
+    pub tilting: f32,
+    pub last_tilt_time: time::Tm,
 
     pub command: String,
     pub command_mode: bool,
@@ -121,12 +121,12 @@ impl StereoUi {
 
             blade: 0.0,
 
-            f_pan: 90.0,
-            f_panning: 0.0,
-            last_f_pan_time: time::now(),
-            f_tilt: 130.0,
-            f_tilting: 0.0,
-            last_f_tilt_time: time::now(),
+            pan: 90.0,
+            panning: 0.0,
+            last_pan_time: time::now(),
+            tilt: 90.0,
+            tilting: 0.0,
+            last_tilt_time: time::now(),
 
             command: "".to_string(),
             command_mode: false,
@@ -147,8 +147,8 @@ impl StereoUi {
     pub fn update(&mut self, dt: f64) {
         let dt = dt as f32;
 
-        self.f_pan += self.f_panning*180.0*dt; // 180 degrees per second
-        self.f_tilt += self.f_tilting*90.0*dt; // 90 degrees per second
+        self.pan += self.panning*180.0*dt; // 180 degrees per second
+        self.tilt += self.tilting*90.0*dt; // 90 degrees per second
 
         self.flush_out_queue();
     }
@@ -275,7 +275,7 @@ impl StereoUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         
         // Camera pan slider
-        Slider::new(self.f_pan, 0.0, 180.0)
+        Slider::new(self.pan, 0.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 425.0, (ui.win_h / 2.0) - 425.0)
             .rgb(0.5, 0.3, 0.6)
@@ -283,12 +283,12 @@ impl StereoUi {
             .label("Pan")
             .label_color(WHITE)
             .react(|new_pan| {
-                self.try_update_f_pan(new_pan);
+                self.try_update_pan(new_pan);
             })
             .set(F_PAN_SLIDER, ui);
 
         // Camera tilt slider
-        Slider::new(self.f_tilt, 90.0, 180.0)
+        Slider::new(self.tilt, 0.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
             .rgb(0.5, 0.3, 0.6)
@@ -296,7 +296,7 @@ impl StereoUi {
             .label("Tilt")
             .label_color(WHITE)
             .react(|new_tilt| {
-                self.try_update_f_tilt(new_tilt);
+                self.try_update_tilt(new_tilt);
             })
             .set(F_TILT_SLIDER, ui);
 
@@ -440,19 +440,19 @@ impl StereoUi {
             },
             W => {
                 // Camera up
-                self.f_tilting = 1.0;
+                self.tilting = 1.0;
             },
             S => {
                 // Camera down
-                self.f_tilting = -1.0;
+                self.tilting = -1.0;
             },
             A => {
                 // Camera left
-                self.f_panning = -1.0;
+                self.panning = -1.0;
             },
             D => {
                 // Camera right
-                self.f_panning = 1.0;
+                self.panning = 1.0;
             },
             _ => { },
         }
@@ -483,12 +483,12 @@ impl StereoUi {
                 self.send_blade();
             },
             W | S => {
-                self.f_tilting = 0.0;
-                self.send_f_tilt();
+                self.tilting = 0.0;
+                self.send_tilt();
             },
             A | D => {
-                self.f_panning = 0.0;
-                self.send_f_pan();
+                self.panning = 0.0;
+                self.send_pan();
             },
             _ => { },
         }
@@ -508,17 +508,17 @@ impl StereoUi {
         }
     }
 
-    pub fn try_update_f_pan(&mut self, f_pan: f32) {
-        if (f_pan - self.f_pan).abs() > 5.0 || f_pan == 0.0 || f_pan == 180.0 {
-            self.f_pan = f_pan;
-            self.send_f_pan();
+    pub fn try_update_pan(&mut self, pan: f32) {
+        if (pan - self.pan).abs() > 5.0 || pan == 0.0 || pan == 180.0 {
+            self.pan = pan;
+            self.send_pan();
         }
     }
 
-    pub fn try_update_f_tilt(&mut self, f_tilt: f32) {
-        if (f_tilt - self.f_tilt).abs() > 5.0 || f_tilt == 90.0 || f_tilt == 180.0 {
-            self.f_tilt = f_tilt;
-            self.send_f_tilt();
+    pub fn try_update_tilt(&mut self, tilt: f32) {
+        if (tilt - self.tilt).abs() > 5.0 || tilt == 90.0 || tilt == 180.0 {
+            self.tilt = tilt;
+            self.send_tilt();
         }
     }
 
@@ -552,21 +552,21 @@ impl StereoUi {
         self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
     }
 
-    pub fn send_f_pan(&mut self) {
-        let time_since = (time::now() - self.last_f_pan_time).num_milliseconds();
+    pub fn send_pan(&mut self) {
+        let time_since = (time::now() - self.last_pan_time).num_milliseconds();
         if time_since >= 500 {
-            self.last_f_pan_time = time::now();
-            let packet = format!("C{}|", self.f_pan as i32);
+            self.last_pan_time = time::now();
+            let packet = format!("I{}|", self.pan as i32);
             let delay = self.delay;
             self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
 
-    pub fn send_f_tilt(&mut self) {
-        let time_since = (time::now() - self.last_f_tilt_time).num_milliseconds();
+    pub fn send_tilt(&mut self) {
+        let time_since = (time::now() - self.last_tilt_time).num_milliseconds();
         if time_since >= 500 {
-            self.last_f_tilt_time = time::now();
-            let packet = format!("D{}|", self.f_tilt as i32);
+            self.last_tilt_time = time::now();
+            let packet = format!("J{}|", self.tilt as i32);
             let delay = self.delay;
             self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }

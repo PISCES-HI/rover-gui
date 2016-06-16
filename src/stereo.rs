@@ -88,8 +88,8 @@ fn main() {
     let mut stereo_ui = StereoUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder);
     stereo_ui.send_l_rpm();
     stereo_ui.send_r_rpm();
-    stereo_ui.send_f_pan();
-    stereo_ui.send_f_tilt();
+    stereo_ui.send_pan();
+    stereo_ui.send_tilt();
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
