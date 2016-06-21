@@ -171,25 +171,18 @@ fn main() {
             stereo_ui.draw_ui(c, g, &mut ui);
 
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
+                .draw([5.0, 80.0, 630.0, 355.0],
                       &c.draw_state, c.transform,
                       g);
             image(&vid_textures[vid_displays[0]],
-                  c.trans(1280.0 - 700.0 - 5.0, 5.0).scale(700.0/450.0, 400.0/450.0).transform, g);
+                  c.trans(5.0, 80.0).scale(630.0/450.0, 355.0/450.0).transform, g);
             
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                .draw([1280.0 - 700.0 - 10.0, 495.0, 350.0, 200.0],
+                .draw([1280.0 - 630.0 - 5.0, 80.0, 630.0, 355.0],
                       &c.draw_state, c.transform,
                       g);
-            image(&vid_textures[vid_displays[1]],
-                  c.trans(1280.0 - 700.0 - 10.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, g);
-            
-            Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                .draw([1280.0 - 350.0 - 5.0, 495.0, 350.0, 200.0],
-                      &c.draw_state, c.transform,
-                      g);
-            image(&vid_textures[vid_displays[2]],
-                  c.trans(1280.0 - 350.0 - 5.0, 495.0).scale(350.0/450.0, 200.0/450.0).transform, g);
+            image(&vid_textures[vid_displays[0]],
+                  c.trans(1280.0 - 630.0 - 5.0, 80.0).scale(630.0/450.0, 355.0/450.0).transform, g);
         });
     }
 }

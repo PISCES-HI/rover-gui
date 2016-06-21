@@ -74,7 +74,6 @@ pub struct StereoUi {
     pub last_tilt_time: time::Tm,
 
     pub command: String,
-    pub command_mode: bool,
 
     client: UdpSocket,
     vid0_t: Sender<VideoMsg>,
@@ -129,7 +128,6 @@ impl StereoUi {
             last_tilt_time: time::now(),
 
             command: "".to_string(),
-            command_mode: false,
 
             client: client,
             vid0_t: vid0_t,
@@ -181,103 +179,12 @@ impl StereoUi {
             .color(self.bg_color.plain_contrast())
             .set(UTC_TIME, ui);
 
-        // Mission time label
-        let mission_time =
-            match self.mission_time {
-                MissionTime::Paused(t) => t,
-                MissionTime::Running(start_time, extra_time) =>
-                    (time::now() - start_time) + extra_time
-            };
-        let total_days = mission_time.num_days();
-        let total_hours = mission_time.num_hours();
-        let total_minutes = mission_time.num_minutes();
-        let total_seconds = mission_time.num_seconds();
-
-        let days = total_days;
-        let hours = total_hours - total_days*24;
-        let minutes = total_minutes - total_hours*60;
-        let seconds = total_seconds - total_minutes*60;
-        Text::new(format!("Mission Time: {}:{}:{}:{}", days, hours, minutes, seconds).as_str())
-            .x_y((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 70.0)
-            .font_size(20)
-            .color(self.bg_color.plain_contrast())
-            .set(MISSION_TIME_LABEL, ui);
-
-        // Mission start/pause button
-        let mission_start_text =
-            match self.mission_time {
-                MissionTime::Paused(_) => "Start",
-                MissionTime::Running(_, _) => "Pause",
-            };
-        Button::new()
-            .w_h(100.0, 30.0)
-            .x_y((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label(mission_start_text)
-            .react(|| {
-                match self.mission_time {
-                    MissionTime::Paused(current_time) => {
-                        self.mission_time = MissionTime::Running(time::now(), current_time);
-
-                        self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
-                        self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse{}.mkv", self.mission_folder, self.vid_num)));
-                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));
-
-                        self.vid_num += 1;
-                    },
-                    MissionTime::Running(start_time, extra_time) => {
-                        self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
-
-                        self.vid0_t.send(VideoMsg::Stop);
-                        self.vid1_t.send(VideoMsg::Stop);
-                        self.vid2_t.send(VideoMsg::Stop);
-                    },
-                };
-            })
-            .set(MISSION_START_BUTTON, ui);
-
-        // Mission reset button
-        Button::new()
-            .w_h(100.0, 30.0)
-            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Reset")
-            .react(|| {
-                self.mission_time = MissionTime::Paused(time::Duration::zero());
-            })
-            .set(MISSION_RESET_BUTTON, ui);
-
-        // Time delay
-        Text::new("Time Delay:")
-            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 150.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(TIME_DELAY, ui);
-
-        let mut new_delay = false;
-        TextBox::new(&mut self.delay_str)
-            .font_size(16)
-            .w_h(50.0, 20.0)
-            .x_y((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 150.0)
-            .frame(1.0)
-            .frame_color(self.bg_color.invert().plain_contrast())
-            .color(self.bg_color.invert())
-            .react(|s: &mut String| {
-                new_delay = true;
-            })
-            .set(TIME_DELAY_VALUE, ui);
-        if new_delay {
-            self.delay = time::Duration::seconds(self.delay_str.parse().unwrap());
-        }
-
         ////////////////////////////////////////////////////////////////////////////////////////////
         
         // Camera pan slider
         Slider::new(self.pan, 0.0, 180.0)
             .w_h(150.0, 30.0)
-            .x_y((ui.win_w / 2.0) - 425.0, (ui.win_h / 2.0) - 425.0)
+            .x_y(-80.0, (ui.win_h / 2.0) - 475.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("Pan")
@@ -290,7 +197,7 @@ impl StereoUi {
         // Camera tilt slider
         Slider::new(self.tilt, 0.0, 180.0)
             .w_h(150.0, 30.0)
-            .x_y((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
+            .x_y(80.0, (ui.win_h / 2.0) - 475.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("Tilt")
@@ -311,7 +218,6 @@ impl StereoUi {
 
         let mut should_send_command = false;
         TextBox::new(&mut self.command)
-            .enabled(self.command_mode)
             .font_size(16)
             .w_h(320.0, 20.0)
             .x_y(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
@@ -330,25 +236,6 @@ impl StereoUi {
             .label("Send")
             .react(|| { self.send_command(); })
             .set(SEND_COMMAND_BUTTON, ui);
-
-        let mode_label =
-            match self.command_mode {
-                true  => "Command Mode",
-                false => "Real-time Mode",
-            };
-        Text::new(mode_label)
-            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(MODE_LABEL, ui);
-        Button::new()
-            .w_h(150.0, 30.0)
-            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Toggle Mode")
-            .react(|| { self.command_mode = !self.command_mode; })
-            .set(MODE_TOGGLE_BUTTON, ui);
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -367,10 +254,6 @@ impl StereoUi {
 
     pub fn on_key_pressed<'a>(&mut self, key: Key) {
         use piston_window::Key::*;
-
-        if self.command_mode {
-            return;
-        }
 
         // here need to add key for rpm values, need stuff between 0 and 100 - 10/29 CP
         // thought was to have '+' and '-' keys control a percentage slider, where
@@ -460,10 +343,6 @@ impl StereoUi {
 
     pub fn on_key_released<'a>(&mut self, key: Key) {
         use piston_window::Key::*;
-
-        if self.command_mode {
-            return;
-        }
 
         match key {
             Up | Down | Left | Right => {
