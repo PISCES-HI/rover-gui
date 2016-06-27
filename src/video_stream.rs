@@ -30,7 +30,8 @@ pub enum VideoMsg {
 pub fn start_video_stream<'a>(window: &mut PistonWindow,
                               record_r: Receiver<VideoMsg>,
                               path: &str) -> (G2dTexture<'a>, Arc<Mutex<RgbaImage>>) {
-    let rgba_img = RgbaImage::new(450, 450);
+    let image_size: u32 = 450;
+    let rgba_img = RgbaImage::new(image_size, image_size);
     let video_texture = G2dTexture::from_image(&mut window.factory,
                                                &rgba_img,
                                                &TextureSettings::new()).unwrap();
@@ -60,7 +61,7 @@ pub fn start_video_stream<'a>(window: &mut PistonWindow,
             let mut decoder = codec_context.decoder().video().unwrap();
             println!("ASDF {} {}", decoder.width(), decoder.height());
             let mut sws_context = scaling::Context::get(decoder.format(), decoder.width(), decoder.height(),
-                                                    Pixel::RGBA, 450, 450,
+                                                    Pixel::RGBA, image_size, image_size,
                                                     scaling::flag::BILINEAR).unwrap();
 
             // Open recording stream
@@ -76,7 +77,7 @@ pub fn start_video_stream<'a>(window: &mut PistonWindow,
             
             for (stream, packet) in format_context.packets() {
                 let mut input_frame = frame::Video::new(decoder.format(), decoder.width(), decoder.height());
-                let mut output_frame = frame::Video::new(Pixel::RGBA, 450, 450);
+                let mut output_frame = frame::Video::new(Pixel::RGBA, image_size, image_size);
 
                 decoder.decode(&packet, &mut input_frame).unwrap();
                 
@@ -93,11 +94,11 @@ pub fn start_video_stream<'a>(window: &mut PistonWindow,
                         for y in 0..output_frame.height() {
                             let line_size = (*output_frame.as_ptr()).linesize[0] as usize;
                             let offset = (y as usize) * line_size;
-                            let dst_offset = (y as usize) * 450*4;
+                            let dst_offset = (y as usize) * (image_size as usize)*4;
                             //println!("{}", offset);
                             let src: *const u8 = mem::transmute(frame_data.get(offset));
                             let dst = rgba_img.as_mut_ptr().offset(dst_offset as isize);
-                            ptr::copy(src, dst, 450*4);
+                            ptr::copy(src, dst, (image_size as usize)*4);
                         }
                     }
                 }

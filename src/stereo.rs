@@ -77,11 +77,10 @@ fn main() {
     let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
+        //start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
+        start_video_stream(window, vid0_r, "/dev/video1");
     let (video1_texture, video1_image) =
         start_video_stream(window, vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
-    let (video2_texture, video2_image) =
-        start_video_stream(window, vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
@@ -93,7 +92,7 @@ fn main() {
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    let mut vid_textures = [video0_texture, video1_texture, video2_texture];
+    let mut vid_textures = [video0_texture, video1_texture];
     let mut vid_displays = [0, 1, 2];
 
     let mut mouse_x = 0.0;
@@ -155,9 +154,6 @@ fn main() {
             
             let video1_image = video1_image.lock().unwrap();
             vid_textures[1].update(&mut window.encoder, &video1_image);
-            
-            let video2_image = video2_image.lock().unwrap();
-            vid_textures[2].update(&mut window.encoder, &video2_image);
         });
 
         // Render GUI
