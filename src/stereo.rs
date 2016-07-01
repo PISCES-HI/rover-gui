@@ -78,9 +78,10 @@ fn main() {
     
     let (video0_texture, video0_image) =
         //start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
-        start_video_stream(window, vid0_r, "/dev/video1");
+        //start_video_stream(window, vid0_r, "/dev/video1", 480);
+        start_video_stream(window, vid0_r, "/dev/video1", 1944);
     let (video1_texture, video1_image) =
-        start_video_stream(window, vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
+        start_video_stream(window, vid1_r, "/dev/video1", 1944);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
@@ -116,20 +117,6 @@ fn main() {
         e.press(|button| {
             match button {
                 Button::Keyboard(key) => stereo_ui.on_key_pressed(key), 
-                Button::Mouse(b) => {
-                    use piston_window::mouse::MouseButton;
-                    if b == MouseButton::Left {
-                        if mouse_x >= 1280.0- 700.0-10.0 && mouse_x <= 1280.0-350.0-10.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
-                            let tmp = vid_displays[0];
-                            vid_displays[0] = vid_displays[1];
-                            vid_displays[1] = tmp;
-                        } else if mouse_x >= 1280.0-350.0-5.0 && mouse_x <= 1280.0-5.0 && mouse_y >= 495.0 && mouse_y <= 695.0 {
-                            let tmp = vid_displays[0];
-                            vid_displays[0] = vid_displays[2];
-                            vid_displays[2] = tmp;
-                        }
-                    }
-                },
                 _ => { },
             }
         });
@@ -167,18 +154,18 @@ fn main() {
             stereo_ui.draw_ui(c, g, &mut ui);
 
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                .draw([5.0, 80.0, 630.0, 355.0],
+                .draw([5.0, 80.0, 630.0, 480.0],
                       &c.draw_state, c.transform,
                       g);
             image(&vid_textures[vid_displays[0]],
-                  c.trans(5.0, 80.0).scale(630.0/450.0, 355.0/450.0).transform, g);
+                  c.trans(5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);
             
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
-                .draw([1280.0 - 630.0 - 5.0, 80.0, 630.0, 355.0],
+                .draw([1280.0 - 630.0 - 5.0, 80.0, 630.0, 480.0],
                       &c.draw_state, c.transform,
                       g);
             image(&vid_textures[vid_displays[0]],
-                  c.trans(1280.0 - 630.0 - 5.0, 80.0).scale(630.0/450.0, 355.0/450.0).transform, g);
+                  c.trans(1280.0 - 630.0 - 5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);
         });
     }
 }

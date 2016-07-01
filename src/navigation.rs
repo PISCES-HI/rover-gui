@@ -77,11 +77,11 @@ fn main() {
     let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
+        start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp", 450);
     let (video1_texture, video1_image) =
-        start_video_stream(window, vid1_r, "rtsp://10.10.155.167/axis-media/media.amp");
+        start_video_stream(window, vid1_r, "rtsp://10.10.155.167/axis-media/media.amp", 450);
     let (video2_texture, video2_image) =
-        start_video_stream(window, vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp");
+        start_video_stream(window, vid2_r, "rtsp://root:pisces@10.10.155.168/axis-media/media.amp", 450);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
