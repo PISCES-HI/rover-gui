@@ -68,26 +68,17 @@ fn main() {
         }).unwrap();
 
     ////////////////////////////////////////////////////////////////////////////////////////
-
-    let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
-    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
-
-    let (vid0_t, vid0_r) = channel();
-    let (vid1_t, vid1_r) = channel();
-    let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        //start_video_stream(window, vid0_r, "rtsp://10.10.155.166/axis-media/media.amp");
-        //start_video_stream(window, vid0_r, "/dev/video1", 480);
-        start_video_stream(window, vid0_r, "/dev/video1", 1944);
+        //start_video_stream(window, None, "rtsp://10.10.155.166/axis-media/media.amp");
+        //start_video_stream(window, None, "/dev/video1", 480);
+        start_video_stream(window, None, "/dev/video1", 1944);
     let (video1_texture, video1_image) =
-        start_video_stream(window, vid1_r, "/dev/video1", 1944);
+        start_video_stream(window, None, "/dev/video1", 1944);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
-    let mut stereo_ui = StereoUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder);
-    stereo_ui.send_l_rpm();
-    stereo_ui.send_r_rpm();
+    let mut stereo_ui = StereoUi::new(client);
     stereo_ui.send_pan();
     stereo_ui.send_tilt();
 

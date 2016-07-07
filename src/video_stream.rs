@@ -28,7 +28,7 @@ pub enum VideoMsg {
 }
 
 pub fn start_video_stream<'a>(window: &mut PistonWindow,
-                              record_r: Receiver<VideoMsg>,
+                              record_r: Option<Receiver<VideoMsg>>,
                               path: &str,
                               image_size: u32) -> (G2dTexture<'a>, Arc<Mutex<RgbaImage>>) {
     let rgba_img = RgbaImage::new(image_size, image_size);
@@ -104,24 +104,26 @@ pub fn start_video_stream<'a>(window: &mut PistonWindow,
                 }
 
                 // Check for messages
-                if let Ok(msg) = record_r.try_recv() {
-                    match msg {
-                        VideoMsg::Start(out_path) => {
-                            // Open recording stream
-                            if video_t.is_none() {
-                                rec_start_pts = packet.pts().unwrap();
-                                start = ffmpeg::time::relative() as i64;
-                                let (t, r) = channel();
-                                start_video_recording(&decoder, r, out_path);
-                                video_t = Some(t);
-                            }
-                        },
-                        VideoMsg::Stop => {
-                            if let Some(ref video_t) = video_t {
-                                video_t.send(RecordPacket::Close);
-                            }
-                            video_t = None;
-                        },
+                if let Some(ref record_r) = record_r {
+                    if let Ok(msg) = record_r.try_recv() {
+                        match msg {
+                            VideoMsg::Start(out_path) => {
+                                // Open recording stream
+                                if video_t.is_none() {
+                                    rec_start_pts = packet.pts().unwrap();
+                                    start = ffmpeg::time::relative() as i64;
+                                    let (t, r) = channel();
+                                    start_video_recording(&decoder, r, out_path);
+                                    video_t = Some(t);
+                                }
+                            },
+                            VideoMsg::Stop => {
+                                if let Some(ref video_t) = video_t {
+                                    video_t.send(RecordPacket::Close);
+                                }
+                                video_t = None;
+                            },
+                        }
                     }
                 }
 
