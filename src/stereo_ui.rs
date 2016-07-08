@@ -152,6 +152,15 @@ impl StereoUi {
             .label("Snapshot")
             .react(|| { self.send_snapshot(); })
             .set(SNAPSHOT_BUTTON, ui);
+
+        Button::new()
+            .w_h(120.0, 30.0)
+            .x_y(80.0, (ui.win_h / 2.0) - 645.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Panorama")
+            .react(|| { self.send_panorama(); })
+            .set(PANORAMA_BUTTON, ui);
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -231,7 +240,17 @@ impl StereoUi {
             self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
-
+    
+    pub fn send_panorama(&mut self) {
+        let time_since = (time::now() - self.last_pan_time).num_milliseconds();
+        if time_since >= 500 {
+            self.last_pan_time = time::now();
+            let packet = format!("L|");
+            let delay = self.delay;
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        }
+    }
+    
     pub fn send_pan(&mut self) {
         let time_since = (time::now() - self.last_pan_time).num_milliseconds();
         if time_since >= 500 {
@@ -286,6 +305,7 @@ widget_ids! {
     F_PAN_SLIDER,
     F_TILT_SLIDER,
     SNAPSHOT_BUTTON,
+    PANORAMA_BUTTON,
     MODE_LABEL,
     MODE_TOGGLE_BUTTON,
 }
