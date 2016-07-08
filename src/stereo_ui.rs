@@ -145,12 +145,12 @@ impl StereoUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
        
         Button::new()
-            .w_h(100.0, 30.0)
-            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
+            .w_h(120.0, 30.0)
+            .x_y(- 80.0, (ui.win_h / 2.0) - 645.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
-            .label("Send")
-            .react(|| { })
+            .label("Snapshot")
+            .react(|| { self.send_snapshot(); })
             .set(SNAPSHOT_BUTTON, ui);
     }
 
@@ -219,6 +219,16 @@ impl StereoUi {
         if (tilt - self.tilt).abs() > 5.0 || tilt == 90.0 || tilt == 180.0 {
             self.tilt = tilt;
             self.send_tilt();
+        }
+    }
+    
+    pub fn send_snapshot(&mut self) {
+        let time_since = (time::now() - self.last_pan_time).num_milliseconds();
+        if time_since >= 500 {
+            self.last_pan_time = time::now();
+            let packet = format!("K|");
+            let delay = self.delay;
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
         }
     }
 
