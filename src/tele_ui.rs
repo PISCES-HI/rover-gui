@@ -192,7 +192,7 @@ impl TelemetryUi {
             r_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
 
             avionics_temp: AvgVal::new(30),
-            avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
+            avionics_temp_limits: RygLimit::GreaterThan(50.0, 40.0),
             avionics_temp_graph: avionics_temp_graph,
 
             wind_speed: AvgVal::new(20),
