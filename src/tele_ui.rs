@@ -69,18 +69,10 @@ pub struct TelemetryUi {
     h_48_v: AvgVal,
     h_48_v_limits: RygLimit,
 
-    a24_graph: LineGraph,
-    h_24_v: AvgVal,
-    h_24_a: AvgVal,
-    h_24_v_limits: RygLimit,
-
     v12_graph: LineGraph,
     p_12_e_v: AvgVal,
     p_12_e_a: AvgVal,
     p_12_e_v_limits: RygLimit,
-
-    p_12_pl_v: AvgVal,
-    p_12_pl_v_limits: RygLimit,
 
     l_motor_amp: AvgVal,
     r_motor_amp: AvgVal,
@@ -100,11 +92,9 @@ pub struct TelemetryUi {
     r_motor_temp_limits: RygLimit,
 
     // Temperature sensors
-    upper_avionics_temp: AvgVal,
-    lower_avionics_temp: AvgVal,
-    ambient_temp: AvgVal,
-    upper_avionics_temp_limits: RygLimit,
-    lower_avionics_temp_limits: RygLimit,
+    avionics_temp: AvgVal,
+    avionics_temp_limits: RygLimit,
+    avionics_temp_graph: LineGraph,
 
     // Weather section
     wind_speed: AvgVal,
@@ -121,8 +111,8 @@ pub struct TelemetryUi {
 impl TelemetryUi {
     pub fn new(mission_folder: &str) -> TelemetryUi {
         let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
-        let a24_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 40.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let avionics_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 60.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let motor_temp_graph = LineGraph::new((400.0, 150.0),
                                               (0.0, 4.0 * 3600.0 * 2.0),
                                               (0.0, 100.0),
@@ -156,15 +146,15 @@ impl TelemetryUi {
                  .unwrap();
         log_files.get_mut("volt")
                  .unwrap()
-                 .write_all("#H-48v\tH-24v\tP-12v E\tP-12-v PL\n".as_bytes())
+                 .write_all("#H-48v\tP-12v E\n".as_bytes())
                  .unwrap();
         log_files.get_mut("amp")
                  .unwrap()
-                 .write_all("#H-24v\tP-12v E\ttL motor\tR motor\n".as_bytes())
+                 .write_all("#P-12v E\ttL motor\tR motor\n".as_bytes())
                  .unwrap();
         log_files.get_mut("temp")
                  .unwrap()
-                 .write_all("#L motor\tR motor\tUpper Avionics\tLower Avionics\n".as_bytes())
+                 .write_all("#L motor\tR motor\tAvionics\n".as_bytes())
                  .unwrap();
         log_files.get_mut("weather")
                  .unwrap()
@@ -180,18 +170,10 @@ impl TelemetryUi {
             h_48_v: AvgVal::new(60),
             h_48_v_limits: RygLimit::LessThan(45.0, 48.0),
 
-            a24_graph: a24_graph,
-            h_24_v: AvgVal::new(60),
-            h_24_a: AvgVal::new(30),
-            h_24_v_limits: RygLimit::LessThan(22.0, 24.0),
-
             v12_graph: v12_graph,
             p_12_e_v: AvgVal::new(60),
             p_12_e_a: AvgVal::new(30),
             p_12_e_v_limits: RygLimit::LessThan(10.0, 12.0),
-
-            p_12_pl_v: AvgVal::new(60),
-            p_12_pl_v_limits: RygLimit::LessThan(10.0, 12.0),
 
             l_motor_amp: AvgVal::new(30),
             r_motor_amp: AvgVal::new(30),
@@ -209,11 +191,9 @@ impl TelemetryUi {
             l_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
             r_motor_temp_limits: RygLimit::GreaterThan(80.0, 60.0),
 
-            upper_avionics_temp: AvgVal::new(30),
-            lower_avionics_temp: AvgVal::new(30),
-            ambient_temp: AvgVal::new(30),
-            upper_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
-            lower_avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
+            avionics_temp: AvgVal::new(30),
+            avionics_temp_limits: RygLimit::GreaterThan(60.0, 45.0),
+            avionics_temp_graph: avionics_temp_graph,
 
             wind_speed: AvgVal::new(20),
             pressure: None,
@@ -241,16 +221,15 @@ impl TelemetryUi {
                self.speed, self.gps_altitude, self.angle).unwrap();
         // volt
         write!(&mut self.log_files.get_mut("volt").unwrap(),
-               "{:?}\t{:?}\t{:?}\t{:?}\n", self.h_48_v.get(), self.h_24_v.get(),
-               self.p_12_e_v.get(), self.p_12_pl_v.get()).unwrap();
+               "{:?}\t{:?}\n", self.h_48_v.get(), self.p_12_e_v.get()).unwrap();
         // amp
         write!(&mut self.log_files.get_mut("amp").unwrap(),
-               "{:?}\t{:?}\t{:?}\t{:?}\n", self.h_24_a.get(), self.p_12_e_a.get(),
+               "{:?}\t{:?}\t{:?}\n", self.p_12_e_a.get(),
                self.l_motor_amp.get(), self.r_motor_amp.get()).unwrap();
         // temp
         write!(&mut self.log_files.get_mut("temp").unwrap(),
-               "{:?}\t{:?}\t{:?}\t{:?}\n", self.l_motor_temp.get(), self.r_motor_temp.get(),
-               self.upper_avionics_temp.get(), self.lower_avionics_temp.get()).unwrap();
+               "{:?}\t{:?}\t{:?}\n", self.l_motor_temp.get(), self.r_motor_temp.get(),
+               self.avionics_temp.get()).unwrap();
         // weather
         write!(&mut self.log_files.get_mut("weather").unwrap(),
                "{:?}\t{:?}\t{:?}\t{:?}\n", self.wind_speed.get(), self.pressure,
@@ -272,7 +251,7 @@ impl TelemetryUi {
         ui.draw(c, g);
 
         self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), g, &mut *ui.glyph_cache.borrow_mut());
-        self.a24_graph.draw(c.trans(ui.win_w - 405.0, 185.0), g, &mut *ui.glyph_cache.borrow_mut());
+        self.avionics_temp_graph.draw(c.trans(ui.win_w - 405.0, 185.0), g, &mut *ui.glyph_cache.borrow_mut());
         self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), g, &mut *ui.glyph_cache.borrow_mut());
         self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), g, &mut *ui.glyph_cache.borrow_mut());
     }
@@ -397,44 +376,6 @@ impl TelemetryUi {
             .color(rgb(0.0, 0.0, 0.0))
             .set(H_48_A_VALUE, ui);*/
 
-        // 24 bus
-
-        Text::new(format!("24 H-Bus").as_str())
-            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 280.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(H_24_LABEL, ui);
-
-        let (h_24_v, h_24_v_color) =
-            match self.h_24_v.get() {
-                Some(v) => {
-                    (format!("{0:.2}V", v), self.h_24_v_limits.get_color(v))
-                },
-                None => {
-                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
-                },
-            };
-        let (h_24_a, h_24_a_color) =
-            match self.h_24_a.get() {
-                Some(a) => {
-                    (format!("{0:.2}A", a), rgb(0.0, 1.0, 0.0))
-                },
-                None => {
-                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
-                },
-            };
-        Text::new(h_24_v.as_str())
-            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 300.0)
-            .font_size(16)
-            .color(h_24_v_color)
-            .set(H_24_V_VALUE, ui);
-
-        Text::new(h_24_a.as_str())
-            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 300.0)
-            .font_size(16)
-            .color(h_24_a_color)
-            .set(H_24_A_VALUE, ui);
-
         // P-12 E bus
 
         Text::new(format!("P-12 E Bus").as_str())
@@ -472,35 +413,6 @@ impl TelemetryUi {
             .font_size(16)
             .color(p_12_e_a_color)
             .set(P_12_E_A_VALUE, ui);
-
-        // P-12 PL bus
-
-        Text::new(format!("P-12 PL Bus").as_str())
-            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 400.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(P_12_PL_LABEL, ui);
-
-        let (p_12_pl_v, p_12_pl_v_color) =
-            match self.p_12_pl_v.get() {
-                Some(v) => {
-                    (format!("{0:.2}V", v), self.p_12_pl_v_limits.get_color(v))
-                },
-                None => {
-                    ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0))
-                },
-            };
-        Text::new(p_12_pl_v.as_str())
-            .x_y((-ui.win_w / 2.0) + 60.0, (ui.win_h / 2.0) - 420.0)
-            .font_size(16)
-            .color(p_12_pl_v_color)
-            .set(P_12_PL_V_VALUE, ui);
-
-        /*Text::new(p_12_pl_a.as_str())
-            .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 420.0)
-            .font_size(16)
-            .color(p_12_pl_v_color)
-            .set(P_12_PL_A_VALUE, ui);*/
 
         // Left motor
 
@@ -674,68 +586,27 @@ impl TelemetryUi {
             .color(r_motor_temp_color)
             .set(R_MOTOR_C_LABEL, ui);
 
-        // Upper avionics box temp
+        // avionics box temp
 
-        Text::new(format!("Upper Avionics").as_str())
+        Text::new(format!("Avionics").as_str())
             .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 260.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(UPR_A_TEMP_LABEL, ui);
+            .set(AVIONICS_TEMP_LABEL, ui);
 
-        let (upper_avionics_temp, upper_avionics_temp_color) =
-            match self.upper_avionics_temp.get() {
+        let (avionics_temp, avionics_temp_color) =
+            match self.avionics_temp.get() {
                 Some(temp) => {
-                    (format!("{0:.2} C", temp), self.upper_avionics_temp_limits.get_color(temp))
+                    (format!("{0:.2} C", temp), self.avionics_temp_limits.get_color(temp))
                 },
                 None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
-        Text::new(upper_avionics_temp.as_str())
+        Text::new(avionics_temp.as_str())
             .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 260.0)
             .font_size(16)
-            .color(upper_avionics_temp_color)
-            .set(UPR_A_TEMP_VALUE, ui);
+            .color(avionics_temp_color)
+            .set(AVIONICS_TEMP_VALUE, ui);
 
-        // Lower avionics box temp
-
-        Text::new(format!("Lower Avionics").as_str())
-            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 280.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(LWR_A_TEMP_LABEL, ui);
-
-        let (lower_avionics_temp, lower_avionics_temp_color) =
-            match self.lower_avionics_temp.get() {
-                Some(temp) => {
-                    (format!("{0:.2} C", temp), self.lower_avionics_temp_limits.get_color(temp))
-                },
-                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
-            };
-        Text::new(lower_avionics_temp.as_str())
-            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 280.0)
-            .font_size(16)
-            .color(lower_avionics_temp_color)
-            .set(LWR_A_TEMP_VALUE, ui);
-
-        // Ambient temp
-
-        Text::new(format!("Ambient").as_str())
-            .x_y((-ui.win_w / 2.0) + 360.0, (ui.win_h / 2.0) - 300.0)
-            .font_size(18)
-            .color(self.bg_color.plain_contrast())
-            .set(AMBIENT_TEMP_LABEL, ui);
-
-        let (ambient_temp, ambient_temp_color) =
-            match self.ambient_temp.get() {
-                Some(temp) => {
-                    (format!("{0:.2} C", temp), rgb(0.0, 1.0, 0.0))
-                },
-                None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
-            };
-        Text::new(ambient_temp.as_str())
-            .x_y((-ui.win_w / 2.0) + 500.0, (ui.win_h / 2.0) - 300.0)
-            .font_size(16)
-            .color(ambient_temp_color)
-            .set(AMBIENT_TEMP_VALUE, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Weather section
@@ -897,11 +768,11 @@ impl TelemetryUi {
             .font_size(18)
             .color(self.bg_color.plain_contrast())
             .set(TREND_H_48V_LABEL, ui);
-        Text::new("H-24 A")
+        Text::new("Avionics Temp")
             .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 270.0)
             .font_size(18)
             .color(self.bg_color.plain_contrast())
-            .set(TREND_H_24A_LABEL, ui);
+            .set(TREND_AVIONICS_TEMP_LABEL, ui);
         Text::new("P-12 E V")
             .x_y((ui.win_w / 2.0) - 405.0 - 80.0, (ui.win_h / 2.0) - 450.0)
             .font_size(18)
@@ -932,29 +803,16 @@ impl TelemetryUi {
                     self.v48_graph.add_point(0, point_x, h_48_v);
 
                     /////////////////////
-                    self.h_24_v.add_value(packet_parts[2].parse().unwrap_or(0.0));
-
-                    /////////////////////
                     self.p_12_e_v.add_value(packet_parts[3].parse().unwrap_or(0.0));
                     let p_12_e_v = self.p_12_e_v.get().unwrap_or(0.0);
 
                     let point_x = self.v12_graph.num_points(0) as f64;
                     self.v12_graph.add_point(0, point_x, p_12_e_v);
-
-                    /////////////////////
-                    self.p_12_pl_v.add_value(packet_parts[4].parse().unwrap_or(0.0));
                 },
                 "AMP" => {
                     self.l_motor_amp.add_value(packet_parts[1].parse().unwrap_or(0.0));
                     self.r_motor_amp.add_value(packet_parts[2].parse().unwrap_or(0.0));
                     self.p_12_e_a.add_value(packet_parts[3].parse().unwrap_or(0.0));
-                    
-                    // h-24
-                    self.h_24_a.add_value(packet_parts[4].parse().unwrap_or(0.0));
-                    let h_24_a = self.p_12_e_v.get().unwrap_or(0.0);
-
-                    let point_x = self.a24_graph.num_points(0) as f64;
-                    self.a24_graph.add_point(0, point_x, h_24_a);
                 },
                 "GPS" => {
                     if packet_parts.len() == 6 {
@@ -979,14 +837,12 @@ impl TelemetryUi {
                     let point_x = self.motor_temp_graph.num_points(1) as f64;
                     self.motor_temp_graph.add_point(1, point_x, r_motor_temp);
                 },
-                "UPR_A_TEMP" => {
-                    self.upper_avionics_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
-                },
-                "LWR_A_TEMP" => {
-                    self.lower_avionics_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
-                },
-                "AMBIENT_TEMP" => {
-                    self.ambient_temp.add_value(packet_parts[1].parse().unwrap_or(0.0));
+                "AVIONICS_TEMP" => {
+                    let avionics_temp = packet_parts[1].parse().unwrap_or(0.0);
+                    self.avionics_temp.add_value(avionics_temp);
+                    
+                    let point_x = self.avionics_temp_graph.num_points(0) as f64;
+                    self.avionics_temp_graph.add_point(0, point_x, avionics_temp);
                 },
                 "W_TEMP" => {
                     let temp = packet_parts[1].parse().unwrap();
@@ -1064,17 +920,9 @@ widget_ids! {
     H_48_V_VALUE,
     H_48_A_VALUE,
 
-    H_24_LABEL,
-    H_24_V_VALUE,
-    H_24_A_VALUE,
-
     P_12_E_LABEL,
     P_12_E_V_VALUE,
     P_12_E_A_VALUE,
-
-    P_12_PL_LABEL,
-    P_12_PL_V_VALUE,
-    P_12_PL_A_VALUE,
 
     L_MOTOR_POWER_LABEL,
     L_MOTOR_RPM_LABEL,
@@ -1101,14 +949,8 @@ widget_ids! {
     R_MOTOR_TEMP_LABEL,
     R_MOTOR_C_LABEL,
 
-    UPR_A_TEMP_LABEL,
-    UPR_A_TEMP_VALUE,
-
-    LWR_A_TEMP_LABEL,
-    LWR_A_TEMP_VALUE,
-
-    AMBIENT_TEMP_LABEL,
-    AMBIENT_TEMP_VALUE,
+    AVIONICS_TEMP_LABEL,
+    AVIONICS_TEMP_VALUE,
 
     // Weather section
     WEATHER_LABEL,
@@ -1139,7 +981,7 @@ widget_ids! {
 
     // Trend graph labels
     TREND_H_48V_LABEL,
-    TREND_H_24A_LABEL,
+    TREND_AVIONICS_TEMP_LABEL,
     TREND_P_12_E_V_LABEL,
     TREND_LR_MOTOR_TEMP_LABEL,
 }
