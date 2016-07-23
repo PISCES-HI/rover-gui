@@ -72,9 +72,9 @@ fn main() {
     /*let (video0_texture, video0_image) =
         //start_video_stream(window, None, "rtsp://10.10.155.166/axis-media/media.amp");
         //start_video_stream(window, None, "/dev/video1", 480);
-        start_video_stream(window, None, "/dev/video1", 1944);
+        start_video_stream(window, None, "rtsp://10.10.155.165/stereo0", 1944);
     let (video1_texture, video1_image) =
-        start_video_stream(window, None, "/dev/video1", 1944);*/
+        start_video_stream(window, None, "rtsp://10.10.155.165/stereo1", 1944);*/
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
