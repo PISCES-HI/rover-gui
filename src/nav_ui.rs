@@ -351,12 +351,13 @@ impl NavigationUi {
         let (latitude, latitude_color) =
             match self.latitude {
                 Some(lat) => {
-                    (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
+                    let (deg, min, sec) = gps_degrees_to_dms(lat);
+                    (format!("{}  {}' {:.*}\" N", deg, min, 2, sec), rgb(0.0, 1.0, 0.0))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(latitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 425.0)
+            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 425.0)
             .font_size(16)
             .color(latitude_color)
             .set(LATITUDE_LABEL, ui);
@@ -365,12 +366,14 @@ impl NavigationUi {
         let (longitude, longitude_color) =
             match self.longitude {
                 Some(lng) => {
-                    (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
+                    //(format!("{0:.6} W", lng), rgb(0.0, 1.0, 0.0))
+                    let (deg, min, sec) = gps_degrees_to_dms(lng);
+                    (format!("{}  {}' {:.*}\" W", deg, min, 2, sec), rgb(0.0, 1.0, 0.0))
                 },
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(longitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 445.0)
+            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 445.0)
             .font_size(16)
             .color(longitude_color)
             .set(LONGITUDE_LABEL, ui);
@@ -901,6 +904,23 @@ impl NavigationUi {
         }
         Ok(bytes_written)
     }
+}
+
+fn gps_degrees_to_dms(degrees: f64) -> (i32, i32, f64) {
+    use std::f64;
+
+    let degrees = f64::abs(degrees);
+
+    let minutes = (degrees - f64::floor(degrees)) * 60.0; 
+    let seconds = (minutes - f64::floor(minutes)) * 60.0;
+    let degrees =
+        if degrees < 0.0 {
+            f64::ceil(degrees) as i32
+        } else {
+            f64::floor(degrees) as i32
+        };
+
+    (degrees, f64::floor(minutes) as i32, seconds)
 }
 
 widget_ids! {

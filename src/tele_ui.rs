@@ -469,7 +469,8 @@ impl TelemetryUi {
         let (latitude, latitude_color) =
             match self.latitude {
                 Some(lat) => {
-                    (format!("{0:.2} N", lat), rgb(0.0, 1.0, 0.0))
+                    let (deg, min, sec) = gps_degrees_to_dms(lat);
+                    (format!("{}  {}' {:.*}\" N", deg, min, 2, sec), rgb(0.0, 1.0, 0.0))
                 },
                 None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
@@ -483,7 +484,8 @@ impl TelemetryUi {
         let (longitude, longitude_color) =
             match self.longitude {
                 Some(lng) => {
-                    (format!("{0:.2} W", lng), rgb(0.0, 1.0, 0.0))
+                    let (deg, min, sec) = gps_degrees_to_dms(lng);
+                    (format!("{}  {}' {:.*}\" N", deg, min, 2, sec), rgb(0.0, 1.0, 0.0))
                 },
                 None => ("NO DATA".to_string(), rgb(0.0, 0.0, 0.0)),
             };
@@ -902,6 +904,23 @@ impl TelemetryUi {
             _ => { },
         }
     }
+}
+
+fn gps_degrees_to_dms(degrees: f64) -> (i32, i32, f64) {
+    use std::f64;
+
+    let degrees = f64::abs(degrees);
+
+    let minutes = (degrees - f64::floor(degrees)) * 60.0; 
+    let seconds = (minutes - f64::floor(minutes)) * 60.0;
+    let degrees =
+        if degrees < 0.0 {
+            f64::ceil(degrees) as i32
+        } else {
+            f64::floor(degrees) as i32
+        };
+
+    (degrees, f64::floor(minutes) as i32, seconds)
 }
 
 widget_ids! {
