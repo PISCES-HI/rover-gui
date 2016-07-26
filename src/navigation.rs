@@ -43,12 +43,12 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let client = UdpSocket::bind("0.0.0.0:30002").unwrap();
-    client.send_to(b"connect me plz", ("10.10.155.165", 30001));
+    client.send_to(b"connect me plz", ("10.10.153.8", 30001));
     
     let client_in = client.try_clone().unwrap();
     let (packet_t, packet_r) = channel();
 
-    /*let mut client = TcpStream::connect("10.10.155.165:30001").unwrap();
+    /*let mut client = TcpStream::connect("10.10.153.8:30001").unwrap();
     client.write(b"connect me plz");
     
     let mut client_in = client.try_clone().unwrap();
@@ -77,11 +77,11 @@ fn main() {
     let (vid2_t, vid2_r) = channel();
     
     let (video0_texture, video0_image) =
-        start_video_stream(window, Some(vid0_r), "rtsp://10.10.155.166/axis-media/media.amp", 450);
+        start_video_stream(window, Some(vid0_r), "rtsp://10.10.153.9/axis-media/media.amp", 450);
     let (video1_texture, video1_image) =
-        start_video_stream(window, Some(vid1_r), "rtsp://10.10.155.167/axis-media/media.amp", 450);
+        start_video_stream(window, Some(vid1_r), "rtsp://10.10.153.10/axis-media/media.amp", 450);
     let (video2_texture, video2_image) =
-        start_video_stream(window, Some(vid2_r), "rtsp://root:pisces@10.10.155.168/axis-media/media.amp", 450);
+        start_video_stream(window, Some(vid2_r), "rtsp://root:pisces@10.10.153.11/axis-media/media.amp", 450);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     

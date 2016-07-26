@@ -59,7 +59,7 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30003").unwrap();
-    socket.send_to(b"connect me plz", ("10.10.155.165", 30001));
+    socket.send_to(b"connect me plz", ("10.10.153.8", 30001));
     
     let in_socket = socket.try_clone().unwrap();
     let (packet_t, packet_r) = channel();
@@ -80,7 +80,7 @@ fn main() {
     
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    let (mut video_texture, video_image) = start_video_stream("rtsp://root:pisces@10.10.155.168/axis-media/media.amp", None);
+    let (mut video_texture, video_image) = start_video_stream("rtsp://root:pisces@10.10.153.11/axis-media/media.amp", None);
     
     ///////////////////////////////////////////////////////////////////////////////////////
 

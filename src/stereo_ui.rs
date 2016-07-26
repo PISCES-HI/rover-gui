@@ -237,7 +237,7 @@ impl StereoUi {
             self.last_pan_time = time::now();
             let packet = format!("K|");
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
     
@@ -247,7 +247,7 @@ impl StereoUi {
             self.last_pan_time = time::now();
             let packet = format!("L|");
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
     
@@ -257,7 +257,7 @@ impl StereoUi {
             self.last_pan_time = time::now();
             let packet = format!("I{}|", self.pan as i32);
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
 
@@ -267,7 +267,7 @@ impl StereoUi {
             self.last_tilt_time = time::now();
             let packet = format!("J{}|", self.tilt as i32);
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
 

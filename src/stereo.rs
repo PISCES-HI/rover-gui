@@ -43,12 +43,12 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let client = UdpSocket::bind("0.0.0.0:30002").unwrap();
-    client.send_to(b"connect me plz", ("10.10.155.165", 30001));
+    client.send_to(b"connect me plz", ("10.10.153.8", 30001));
     
     let client_in = client.try_clone().unwrap();
     let (packet_t, packet_r) = channel();
 
-    /*let mut client = TcpStream::connect("10.10.155.165:30001").unwrap();
+    /*let mut client = TcpStream::connect("10.10.153.8:30001").unwrap();
     client.write(b"connect me plz");
     
     let mut client_in = client.try_clone().unwrap();
@@ -70,11 +70,11 @@ fn main() {
     ////////////////////////////////////////////////////////////////////////////////////////
     
     /*let (video0_texture, video0_image) =
-        //start_video_stream(window, None, "rtsp://10.10.155.166/axis-media/media.amp");
+        //start_video_stream(window, None, "rtsp://10.10.153.9/axis-media/media.amp");
         //start_video_stream(window, None, "/dev/video1", 480);
-        start_video_stream(window, None, "rtsp://10.10.155.165/stereo0", 1944);
+        start_video_stream(window, None, "rtsp://10.10.153.8/stereo0", 1944);
     let (video1_texture, video1_image) =
-        start_video_stream(window, None, "rtsp://10.10.155.165/stereo1", 1944);*/
+        start_video_stream(window, None, "rtsp://10.10.153.8/stereo1", 1944);*/
 
     ///////////////////////////////////////////////////////////////////////////////////////
     

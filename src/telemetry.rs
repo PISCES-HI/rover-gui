@@ -39,7 +39,7 @@ fn main() {
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
-    socket.send_to(b"connect me plz", ("10.10.155.165", 30001)).unwrap();
+    socket.send_to(b"connect me plz", ("10.10.153.8", 30001)).unwrap();
     
     let in_socket = socket;
     let (packet_t, packet_r) = channel();

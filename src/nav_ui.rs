@@ -823,25 +823,25 @@ impl NavigationUi {
 
     pub fn send_brake(&mut self) {
         let delay = self.delay;
-        self.queue_packet(delay, vec![b'G'], ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, vec![b'G'], ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_l_rpm(&mut self) {
         let packet = format!("A{}|", self.l_rpm as i32);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_r_rpm(&mut self) {
         let packet = format!("B{}|", self.r_rpm as i32);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_lr_rpm(&mut self) {
         let packet = format!("H{}|{}|", self.l_rpm as i32, self.r_rpm as i32);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_f_pan(&mut self) {
@@ -850,7 +850,7 @@ impl NavigationUi {
             self.last_f_pan_time = time::now();
             let packet = format!("C{}|", self.f_pan as i32);
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
 
@@ -860,26 +860,26 @@ impl NavigationUi {
             self.last_f_tilt_time = time::now();
             let packet = format!("D{}|", self.f_tilt as i32);
             let delay = self.delay;
-            self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+            self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
         }
     }
 
     pub fn send_sadl(&mut self) {
         let packet = format!("E{}|", self.sadl as i32);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_blade(&mut self) {
         let packet = format!("F{}|", self.blade as i32);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn send_command(&mut self) {
         let packet = format!("Z{}|{}|", self.command, self.motor_speed);
         let delay = self.delay;
-        self.queue_packet(delay, packet.into_bytes(), ("10.10.155.165".to_string(), 30001));
+        self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
     pub fn queue_packet(&mut self, delay: time::Duration, mut data: Vec<u8>, addr: (String, u16)) {
