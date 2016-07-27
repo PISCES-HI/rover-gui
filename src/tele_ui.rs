@@ -111,7 +111,7 @@ pub struct TelemetryUi {
 impl TelemetryUi {
     pub fn new(mission_folder: &str) -> TelemetryUi {
         let v48_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 80.0), vec![[1.0, 0.0, 0.0, 1.0]]);
-        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 20.0), vec![[1.0, 0.0, 0.0, 1.0]]);
+        let v12_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (8.0, 14.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let avionics_temp_graph = LineGraph::new((400.0, 150.0), (0.0, 4.0 * 3600.0 * 2.0), (0.0, 60.0), vec![[1.0, 0.0, 0.0, 1.0]]);
         let motor_temp_graph = LineGraph::new((400.0, 150.0),
                                               (0.0, 4.0 * 3600.0 * 2.0),
