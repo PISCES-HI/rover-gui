@@ -72,6 +72,7 @@ pub struct NavigationUi {
     pub f_tilt: f32,
     pub f_tilting: f32,
     pub last_f_tilt_time: time::Tm,
+    pub want_snapshot: bool,
 
     pub command: String,
     pub command_mode: bool,
@@ -127,6 +128,7 @@ impl NavigationUi {
             f_tilt: 130.0,
             f_tilting: 0.0,
             last_f_tilt_time: time::now(),
+            want_snapshot: false,
 
             command: "".to_string(),
             command_mode: false,
@@ -502,6 +504,15 @@ impl NavigationUi {
                 self.try_update_f_tilt(new_tilt);
             })
             .set(F_TILT_SLIDER, ui);
+
+        Button::new()
+            .w_h(100.0, 30.0)
+            .x_y((ui.win_w / 2.0) - 350.0, (ui.win_h / 2.0) - 470.0)
+            .rgb(0.3, 0.8, 0.3)
+            .frame(1.0)
+            .label("Snapshot")
+            .react(|| { self.want_snapshot = true; })
+            .set(SNAPSHOT_BUTTON, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // SADL
@@ -958,6 +969,8 @@ widget_ids! {
     STOP_BUTTON,
     F_PAN_SLIDER,
     F_TILT_SLIDER,
+    SNAPSHOT_BUTTON,
+
     COMMAND_LABEL,
     COMMAND_INPUT,
     SEND_COMMAND_BUTTON,

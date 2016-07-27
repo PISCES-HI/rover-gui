@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::fs;
+use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::mem;
 use std::net::UdpSocket;
@@ -21,6 +21,8 @@ use piston_window::{EventLoop, Glyphs, PistonWindow, WindowSettings};
 use conrod_config::Ui;
 use nav_ui::NavigationUi;
 use video_stream::{init_ffmpeg, start_video_stream, VideoMsg};
+
+use image::imageops::FilterType;
 
 mod conrod_config;
 mod nav_ui;
@@ -70,7 +72,7 @@ fn main() {
     ////////////////////////////////////////////////////////////////////////////////////////
 
     let mission_folder = format!("{}", time::now().strftime("%Y%b%d_%H_%M").unwrap());
-    fs::create_dir_all(format!("mission_data/{}", mission_folder).as_str());
+    fs::create_dir_all(format!("mission_data/{}", mission_folder.as_str()).as_str());
 
     let (vid0_t, vid0_r) = channel();
     let (vid1_t, vid1_r) = channel();
@@ -85,7 +87,7 @@ fn main() {
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
-    let mut nav_ui = NavigationUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder);
+    let mut nav_ui = NavigationUi::new(client, vid0_t, vid1_t, vid2_t, mission_folder.clone());
     nav_ui.send_l_rpm();
     nav_ui.send_r_rpm();
     nav_ui.send_f_pan();
@@ -103,6 +105,8 @@ fn main() {
 
     window.set_ups(10);
     window.set_max_fps(60);
+
+    let mut snapshot_num = 0;
 
     while let Some(e) = window.next() {
         use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent, MouseCursorEvent};
@@ -151,13 +155,28 @@ fn main() {
             }
             
             let video0_image = video0_image.lock().unwrap();
-            vid_textures[0].update(&mut window.encoder, &video0_image);
+            vid_textures[0].update(&mut window.encoder, &video0_image.as_rgba8().unwrap());
             
             let video1_image = video1_image.lock().unwrap();
-            vid_textures[1].update(&mut window.encoder, &video1_image);
+            vid_textures[1].update(&mut window.encoder, &video1_image.as_rgba8().unwrap());
             
             let video2_image = video2_image.lock().unwrap();
-            vid_textures[2].update(&mut window.encoder, &video2_image);
+            vid_textures[2].update(&mut window.encoder, &video2_image.as_rgba8().unwrap());
+
+            if nav_ui.want_snapshot {
+                nav_ui.want_snapshot = false;
+                let snapshot_file_name = format!("mission_data/{}/snapshot_{}.jpg", mission_folder.as_str(), snapshot_num);
+                let ref mut fout = File::create(&Path::new(&snapshot_file_name)).unwrap();
+                snapshot_num += 1;
+                let img =
+                    match vid_displays[0] {
+                        0 => { video0_image.resize_exact(700, 400, FilterType::Nearest) },
+                        1 => { video1_image.resize_exact(700, 400, FilterType::Nearest) },
+                        2 => { video2_image.resize_exact(700, 400, FilterType::Nearest) },
+                        _ => { unreachable!(); },
+                    };
+                img.save(fout, image::JPEG).unwrap();
+            }
         });
 
         // Render GUI

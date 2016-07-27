@@ -18,7 +18,7 @@ use ffmpeg::media;
 use ffmpeg::frame;
 use ffmpeg::software::scaling;
 use ffmpeg::util::format::pixel::Pixel;
-use image::RgbaImage;
+use image::DynamicImage;
 
 use piston_window::{PistonWindow, G2dTexture, TextureSettings};
 
@@ -30,10 +30,10 @@ pub enum VideoMsg {
 pub fn start_video_stream<'a>(window: &mut PistonWindow,
                               record_r: Option<Receiver<VideoMsg>>,
                               path: &str,
-                              image_size: u32) -> (G2dTexture<'a>, Arc<Mutex<RgbaImage>>) {
-    let rgba_img = RgbaImage::new(image_size, image_size);
+                              image_size: u32) -> (G2dTexture<'a>, Arc<Mutex<DynamicImage>>) {
+    let rgba_img = DynamicImage::new_rgba8(image_size, image_size);
     let video_texture = G2dTexture::from_image(&mut window.factory,
-                                               &rgba_img,
+                                               &rgba_img.as_rgba8().unwrap(),
                                                &TextureSettings::new()).unwrap();
     let rgba_img = Arc::new(Mutex::new(rgba_img));
 
@@ -97,7 +97,7 @@ pub fn start_video_stream<'a>(window: &mut PistonWindow,
                             let dst_offset = (y as usize) * (image_size as usize)*4;
                             //println!("{} {} {} {} {} {}", offset, dst_offset, frame_data[offset], frame_data[offset+1], frame_data[offset+2], frame_data[offset+3]);
                             let src: *const u8 = mem::transmute(frame_data.get(offset));
-                            let dst = rgba_img.as_mut_ptr().offset(dst_offset as isize);
+                            let dst = rgba_img.as_mut_rgba8().unwrap().as_mut_ptr().offset(dst_offset as isize);
                             ptr::copy(src, dst, (image_size as usize)*4);
                         }
                     }
