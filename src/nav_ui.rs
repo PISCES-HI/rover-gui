@@ -173,6 +173,8 @@ impl NavigationUi {
     }
 
     pub fn set_widgets(&mut self, ui: &mut conrod_config::UiCell) {
+        use std::cmp;
+
         let time_now = time::now();
 
         // Local time
@@ -481,6 +483,7 @@ impl NavigationUi {
             .set(MOTOR_SPEED_SLIDER, ui);
         
         // Camera pan slider
+        self.f_pan = self.f_pan.max(0.0).min(180.0);
         Slider::new(self.f_pan, 0.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 425.0, (ui.win_h / 2.0) - 425.0)
@@ -494,6 +497,7 @@ impl NavigationUi {
             .set(F_PAN_SLIDER, ui);
 
         // Camera tilt slider
+        self.f_tilt = self.f_tilt.max(90.0).min(180.0);
         Slider::new(self.f_tilt, 90.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
