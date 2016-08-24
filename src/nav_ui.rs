@@ -64,7 +64,7 @@ pub struct NavigationUi {
     pub sadl: f32,
     pub last_sadl_time: time::Tm,
 
-    pub blade: f32,
+    //pub blade: f32,
 
     // Forward camera controls
     pub f_pan: f32,
@@ -121,7 +121,7 @@ impl NavigationUi {
             sadl: 0.0,
             last_sadl_time: time::now(),
 
-            blade: 0.0,
+            //blade: 0.0,
 
             f_pan: 90.0,
             f_panning: 0.0,
@@ -347,7 +347,7 @@ impl NavigationUi {
         // GPS section
 
         Text::new("GPS")
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 400.0)
+            .x_y((-ui.win_w / 2.0) + 400.0, (ui.win_h / 2.0) - 10.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(GPS_LABEL, ui);
@@ -362,7 +362,7 @@ impl NavigationUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(latitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 425.0)
+            .x_y((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 35.0)
             .font_size(16)
             .color(latitude_color)
             .set(LATITUDE_LABEL, ui);
@@ -378,7 +378,7 @@ impl NavigationUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(longitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 70.0, (ui.win_h / 2.0) - 445.0)
+            .x_y((-ui.win_w / 2.0) + 420.0, (ui.win_h / 2.0) - 55.0)
             .font_size(16)
             .color(longitude_color)
             .set(LONGITUDE_LABEL, ui);
@@ -392,7 +392,7 @@ impl NavigationUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(speed.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 465.0)
+            .x_y((-ui.win_w / 2.0) + 400.0, (ui.win_h / 2.0) - 75.0)
             .font_size(16)
             .color(speed_color)
             .set(SPEED_LABEL, ui);
@@ -406,7 +406,7 @@ impl NavigationUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(altitude.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 485.0)
+            .x_y((-ui.win_w / 2.0) + 400.0, (ui.win_h / 2.0) - 95.0)
             .font_size(16)
             .color(altitude_color)
             .set(ALTITUDE_LABEL, ui);
@@ -420,7 +420,7 @@ impl NavigationUi {
                 None => ("NO DATA".to_string(), rgb(1.0, 0.0, 0.0)),
             };
         Text::new(angle.as_str())
-            .x_y((-ui.win_w / 2.0) + 50.0, (ui.win_h / 2.0) - 505.0)
+            .x_y((-ui.win_w / 2.0) + 400.0, (ui.win_h / 2.0) - 115.0)
             .font_size(16)
             .color(angle_color)
             .set(ANGLE_LABEL, ui);
@@ -430,7 +430,7 @@ impl NavigationUi {
         // Left RPM slider
         Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
             .w_h(150.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 410.0)
+            .x_y(275.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 145.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("L Motor")
@@ -443,7 +443,7 @@ impl NavigationUi {
         // Right RPM slider
         Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
             .w_h(150.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 450.0)
+            .x_y(275.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 185.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("R Motor")
@@ -456,7 +456,7 @@ impl NavigationUi {
         // Stop button
         Button::new()
             .w_h(100.0, 30.0)
-            .x_y(250.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 490.0)
+            .x_y(455.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 145.0)
             .rgb(1.0, 0.0, 0.0)
             .frame(1.0)
             .label("Stop")
@@ -472,7 +472,7 @@ impl NavigationUi {
         // Motor speed slider
         Slider::new(self.motor_speed, 0.0, 1.0)
             .w_h(150.0, 30.0)
-            .x_y(420.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 425.0)
+            .x_y(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 185.0)
             .rgb(0.5, 0.3, 0.6)
             .frame(1.0)
             .label("Motor Speed")
@@ -522,12 +522,12 @@ impl NavigationUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
         // SADL
         Text::new("SADL")
-            .x_y(50.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .x_y((ui.win_w / 2.0) - 660.0, (ui.win_h / 2.0) - 465.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(SADL_LABEL, ui);
         Button::new()
-            .x_y(120.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .x_y((ui.win_w / 2.0) - 590.0, (ui.win_h / 2.0) - 465.0)
             .w_h(60.0, 30.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
@@ -535,7 +535,7 @@ impl NavigationUi {
             .react(|| { self.sadl = 100.0; self.send_sadl(); })
             .set(SADL_UP, ui);
         Button::new()
-            .x_y(185.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
+            .x_y((ui.win_w / 2.0) - 525.0, (ui.win_h / 2.0) - 465.0)
             .w_h(60.0, 30.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
@@ -544,33 +544,9 @@ impl NavigationUi {
             .set(SADL_DOWN, ui);
 
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // Blade
-        Text::new("Blade")
-            .x_y(300.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .font_size(22)
-            .color(self.bg_color.plain_contrast())
-            .set(BLADE_LABEL, ui);
-        Button::new()
-            .x_y(370.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Up")
-            .react(|| { self.blade = 100.0; self.send_blade(); })
-            .set(BLADE_UP, ui);
-        Button::new()
-            .x_y(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 540.0)
-            .w_h(60.0, 30.0)
-            .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
-            .label("Down")
-            .react(|| { self.blade = -100.0; self.send_blade(); })
-            .set(BLADE_DOWN, ui);
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
         // Command section
         Text::new("Command")
-            .x_y(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 580.0)
+            .x_y(110.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 615.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(COMMAND_LABEL, ui);
@@ -580,7 +556,7 @@ impl NavigationUi {
             .enabled(self.command_mode)
             .font_size(16)
             .w_h(320.0, 20.0)
-            .x_y(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
+            .x_y(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
             .frame(1.0)
             .frame_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
@@ -590,7 +566,7 @@ impl NavigationUi {
 
         Button::new()
             .w_h(100.0, 30.0)
-            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 605.0)
+            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label("Send")
@@ -603,13 +579,13 @@ impl NavigationUi {
                 false => "Real-time Mode",
             };
         Text::new(mode_label)
-            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
+            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 675.0)
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(MODE_LABEL, ui);
         Button::new()
             .w_h(150.0, 30.0)
-            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
+            .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 675.0)
             .rgb(0.3, 0.8, 0.3)
             .frame(1.0)
             .label("Toggle Mode")
@@ -736,7 +712,7 @@ impl NavigationUi {
                 self.sadl = -100.0;
                 self.send_sadl();
             },
-            D9 => {
+            /*D9 => {
                 // Blade up
                 self.blade = 100.0;
                 self.send_blade();
@@ -745,7 +721,7 @@ impl NavigationUi {
                 // Blade down
                 self.blade = -100.0;
                 self.send_blade();
-            },
+            },*/
             W => {
                 // Camera up
                 self.f_tilting = 1.0;
@@ -785,11 +761,11 @@ impl NavigationUi {
                 self.sadl = 0.0;
                 self.send_sadl();
             },
-            D9 | D0 => {
+            /*D9 | D0 => {
                 // Blade stop
                 self.blade = 0.0;
                 self.send_blade();
-            },
+            },*/
             W | S => {
                 self.f_tilting = 0.0;
                 self.send_f_tilt();
@@ -886,11 +862,11 @@ impl NavigationUi {
         self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }
 
-    pub fn send_blade(&mut self) {
+    /*pub fn send_blade(&mut self) {
         let packet = format!("F{}|", self.blade as i32);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
-    }
+    }*/
 
     pub fn send_command(&mut self) {
         let packet = format!("Z{}|{}|", self.command.to_uppercase(), self.motor_speed);
@@ -985,8 +961,4 @@ widget_ids! {
     SADL_LABEL,
     SADL_UP,
     SADL_DOWN,
-
-    BLADE_LABEL,
-    BLADE_UP,
-    BLADE_DOWN,
 }
