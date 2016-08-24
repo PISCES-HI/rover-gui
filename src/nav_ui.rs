@@ -1,3 +1,4 @@
+use std::ascii::AsciiExt;
 use std::collections::{HashMap, VecDeque};
 use std::io;
 use std::io::Write;
@@ -888,7 +889,7 @@ impl NavigationUi {
     }
 
     pub fn send_command(&mut self) {
-        let packet = format!("Z{}|{}|", self.command, self.motor_speed);
+        let packet = format!("Z{}|{}|", self.command.to_uppercase(), self.motor_speed);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
     }

@@ -69,12 +69,12 @@ fn main() {
 
     ////////////////////////////////////////////////////////////////////////////////////////
     
-    /*let (video0_texture, video0_image) =
+    let (video0_texture, video0_image) =
         //start_video_stream(window, None, "rtsp://10.10.153.9/axis-media/media.amp");
         //start_video_stream(window, None, "/dev/video1", 480);
         start_video_stream(window, None, "rtsp://10.10.153.8/stereo0", 1944);
     let (video1_texture, video1_image) =
-        start_video_stream(window, None, "rtsp://10.10.153.8/stereo1", 1944);*/
+        start_video_stream(window, None, "rtsp://10.10.153.8/stereo1", 1944);
 
     ///////////////////////////////////////////////////////////////////////////////////////
     
@@ -84,7 +84,7 @@ fn main() {
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    //let mut vid_textures = [video0_texture, video1_texture];
+    let mut vid_textures = [video0_texture, video1_texture];
 
     let mut mouse_x = 0.0;
     let mut mouse_y = 0.0;
@@ -126,11 +126,11 @@ fn main() {
                 stereo_ui.handle_packet(packet);
             }
             
-            /*let video0_image = video0_image.lock().unwrap();
-            vid_textures[0].update(&mut window.encoder, &video0_image);
+            let video0_image = video0_image.lock().unwrap();
+            vid_textures[0].update(&mut window.encoder, &video0_image.as_rgba8().unwrap());
             
             let video1_image = video1_image.lock().unwrap();
-            vid_textures[1].update(&mut window.encoder, &video1_image);*/
+            vid_textures[1].update(&mut window.encoder, &video1_image.as_rgba8().unwrap());
         });
 
         // Render GUI
@@ -147,15 +147,15 @@ fn main() {
                 .draw([5.0, 80.0, 630.0, 480.0],
                       &c.draw_state, c.transform,
                       g);
-            /*image(&vid_textures[0],
-                  c.trans(5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);*/
+            image(&vid_textures[0],
+                  c.trans(5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);
             
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
                 .draw([1280.0 - 630.0 - 5.0, 80.0, 630.0, 480.0],
                       &c.draw_state, c.transform,
                       g);
-            /*image(&vid_textures[1],
-                  c.trans(1280.0 - 630.0 - 5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);*/
+            image(&vid_textures[1],
+                  c.trans(1280.0 - 630.0 - 5.0, 80.0).scale(630.0/1944.0, 480.0/1944.0).transform, g);
         });
     }
 }
