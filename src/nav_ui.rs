@@ -497,8 +497,8 @@ impl NavigationUi {
             .set(F_PAN_SLIDER, ui);
 
         // Camera tilt slider
-        self.f_tilt = self.f_tilt.max(90.0).min(180.0);
-        Slider::new(self.f_tilt, 90.0, 180.0)
+        self.f_tilt = self.f_tilt.max(60.0).min(180.0);
+        Slider::new(self.f_tilt, 60.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
             .rgb(0.5, 0.3, 0.6)
