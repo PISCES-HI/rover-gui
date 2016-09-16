@@ -8,23 +8,29 @@ use std::sync::mpsc::Sender;
 
 use conrod::{
     self,
-    Background,
-    Button,
     Color,
+    Ui,
+
+    Borderable,
     Colorable,
-    Frameable,
-    Text,
     Labelable,
     Positionable,
-    Slider,
     Sizeable,
+};
+use conrod::widget::{
+    self,
+    Button,
+    Text,
+    Slider,
     TextBox,
-    Ui,
+    TextEdit,
     Widget,
 };
-use conrod::color::{rgb, WHITE};
+use conrod::color::{rgb, WHITE, LIGHT_BLUE};
 use graphics::{Context, Graphics};
-use piston_window::{self, Key};
+use gfx_graphics;
+use gfx_device_gl;
+use piston_window::{self, Glyphs, Key};
 use time;
 
 use conrod_config;
@@ -77,6 +83,7 @@ pub struct NavigationUi {
 
     pub command: String,
     pub command_mode: bool,
+    command_history: Vec<String>,
 
     client: UdpSocket,
     vid0_t: Sender<VideoMsg>,
@@ -88,6 +95,8 @@ pub struct NavigationUi {
     out_queue: VecDeque<(time::Tm, time::Duration, Vec<u8>, (String, u16))>, // Outbound packet queue
     delay: time::Duration,
     delay_str: String,
+
+    image_map: conrod::image::Map<<piston_window::G2d<'static> as Graphics>::Texture>,
 }
 
 impl NavigationUi {
@@ -133,6 +142,7 @@ impl NavigationUi {
 
             command: "".to_string(),
             command_mode: false,
+            command_history: vec![],
 
             client: client,
             vid0_t: vid0_t,
@@ -144,6 +154,8 @@ impl NavigationUi {
             out_queue: VecDeque::new(),
             delay: time::Duration::seconds(0),
             delay_str: "".to_string(),
+
+            image_map: conrod::image::Map::new(),
         }
     }
 
@@ -156,15 +168,18 @@ impl NavigationUi {
         self.flush_out_queue();
     }
 
-    pub fn draw_ui<'a, G>(&mut self, c: Context, g: &mut G, ui: &mut conrod_config::Ui)
-                          where G: Graphics<Texture=<piston_window::G2d<'static> as conrod::Graphics>::Texture> {
+    pub fn draw_ui<'a>(&mut self, c: Context,
+                          g: &mut gfx_graphics::GfxGraphics<'a, gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+                          glyph_cache: &mut conrod::backend::piston_window::GlyphCache, ui: &mut conrod_config::Ui) {
         use graphics::Transformed;
 
-        // Draw the background.
-        Background::new().color(self.bg_color).set(ui);
+        self.set_widgets(&mut ui.set_widgets());
 
         // Draw our UI!
-        ui.draw(c, g);
+        conrod::backend::piston_window::draw(c, g, ui.draw(),
+                                             glyph_cache,
+                                             &self.image_map,
+                                             |img| img);
 
         // Draw other stuff
         self.pitch.draw(c.trans(20.0, 215.0), g);
@@ -176,6 +191,11 @@ impl NavigationUi {
         use std::cmp;
 
         let time_now = time::now();
+
+        // Draw the background.
+        widget::Canvas::new()
+            .color(self.bg_color)
+            .set(CANVAS, ui);
 
         // Local time
         Text::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
@@ -219,45 +239,47 @@ impl NavigationUi {
                 MissionTime::Paused(_) => "Start",
                 MissionTime::Running(_, _) => "Pause",
             };
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label(mission_start_text)
-            .react(|| {
-                match self.mission_time {
-                    MissionTime::Paused(current_time) => {
-                        self.mission_time = MissionTime::Running(time::now(), current_time);
+            .set(MISSION_START_BUTTON, ui)
+            .was_clicked()
+        {
+            match self.mission_time {
+                MissionTime::Paused(current_time) => {
+                    self.mission_time = MissionTime::Running(time::now(), current_time);
 
-                        self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
-                        self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse{}.mkv", self.mission_folder, self.vid_num)));
-                        self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));
+                    self.vid0_t.send(VideoMsg::Start(format!("mission_data/{}/forward{}.mp4", self.mission_folder, self.vid_num)));
+                    self.vid1_t.send(VideoMsg::Start(format!("mission_data/{}/reverse{}.mkv", self.mission_folder, self.vid_num)));
+                    self.vid2_t.send(VideoMsg::Start(format!("mission_data/{}/hazard{}.mkv", self.mission_folder, self.vid_num)));
 
-                        self.vid_num += 1;
-                    },
-                    MissionTime::Running(start_time, extra_time) => {
-                        self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
+                    self.vid_num += 1;
+                },
+                MissionTime::Running(start_time, extra_time) => {
+                    self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
 
-                        self.vid0_t.send(VideoMsg::Stop);
-                        self.vid1_t.send(VideoMsg::Stop);
-                        self.vid2_t.send(VideoMsg::Stop);
-                    },
-                };
-            })
-            .set(MISSION_START_BUTTON, ui);
+                    self.vid0_t.send(VideoMsg::Stop);
+                    self.vid1_t.send(VideoMsg::Stop);
+                    self.vid2_t.send(VideoMsg::Stop);
+                },
+            };
+        }
 
         // Mission reset button
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Reset")
-            .react(|| {
-                self.mission_time = MissionTime::Paused(time::Duration::zero());
-            })
-            .set(MISSION_RESET_BUTTON, ui);
+            .set(MISSION_RESET_BUTTON, ui)
+            .was_clicked()
+        {
+            self.mission_time = MissionTime::Paused(time::Duration::zero());
+        }
 
         // Time delay
         Text::new("Time Delay:")
@@ -267,19 +289,20 @@ impl NavigationUi {
             .set(TIME_DELAY, ui);
 
         let mut new_delay = false;
-        TextBox::new(&mut self.delay_str)
+        for event in TextBox::new(&mut self.delay_str)
             .font_size(16)
             .w_h(50.0, 20.0)
             .x_y((-ui.win_w / 2.0) + 150.0, (ui.win_h / 2.0) - 150.0)
-            .frame(1.0)
-            .frame_color(self.bg_color.invert().plain_contrast())
+            .border(1.0)
+            .border_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
-            .react(|s: &mut String| {
-                new_delay = true;
-            })
-            .set(TIME_DELAY_VALUE, ui);
-        if new_delay {
-            self.delay = time::Duration::seconds(self.delay_str.parse().unwrap());
+            .set(TIME_DELAY_VALUE, ui)
+        {
+            match event {
+                widget::text_box::Event::Enter => self.delay = time::Duration::seconds(self.delay_str.parse().unwrap()),
+                //widget::text_box::Event::Update(string) => *text = string,
+                _ => { },
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -428,96 +451,100 @@ impl NavigationUi {
         ////////////////////////////////////////////////////////////////////////////////////////////
 
         // Left RPM slider
-        Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
+        if let Some(new_rpm) = Slider::new(self.l_rpm, -self.max_rpm, self.max_rpm)
             .w_h(150.0, 30.0)
             .x_y(275.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 145.0)
             .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
+            .border(1.0)
             .label("L Motor")
             .label_color(WHITE)
-            .react(|new_rpm| {
-                self.try_update_l_rpm(new_rpm);
-            })
-            .set(L_RPM_SLIDER, ui);
+            .set(L_RPM_SLIDER, ui)
+        {
+            self.try_update_l_rpm(new_rpm);
+        }
 
         // Right RPM slider
-        Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
+        if let Some(new_rpm) = Slider::new(self.r_rpm, -self.max_rpm, self.max_rpm)
             .w_h(150.0, 30.0)
             .x_y(275.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 185.0)
             .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
+            .border(1.0)
             .label("R Motor")
             .label_color(WHITE)
-            .react(|new_rpm| {
-                self.try_update_r_rpm(new_rpm);
-            })
-            .set(R_RPM_SLIDER, ui);
+            .set(R_RPM_SLIDER, ui)
+        {
+            self.try_update_r_rpm(new_rpm);
+        }
 
         // Stop button
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y(455.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 145.0)
             .rgb(1.0, 0.0, 0.0)
-            .frame(1.0)
+            .border(1.0)
             .label("Stop")
-            .react(|| {
-                self.l_rpm = 0.0;
-                self.r_rpm = 0.0;
-                self.send_l_rpm();
-                self.send_r_rpm();
-                self.send_brake();
-            })
-            .set(STOP_BUTTON, ui);
+            .set(STOP_BUTTON, ui)
+            .was_clicked()
+        {
+            self.l_rpm = 0.0;
+            self.r_rpm = 0.0;
+            self.send_l_rpm();
+            self.send_r_rpm();
+            self.send_brake();
+        }
 
         // Motor speed slider
-        Slider::new(self.motor_speed, 0.0, 1.0)
+        if let Some(new_speed) = Slider::new(self.motor_speed, 0.0, 1.0)
             .w_h(150.0, 30.0)
             .x_y(435.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 185.0)
             .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
+            .border(1.0)
             .label("Motor Speed")
             .label_color(WHITE)
-            .react(|new_speed| {
-                self.motor_speed = new_speed;
-            })
-            .set(MOTOR_SPEED_SLIDER, ui);
+            .set(MOTOR_SPEED_SLIDER, ui)
+        {
+            self.motor_speed = new_speed;
+        }
         
         // Camera pan slider
         self.f_pan = self.f_pan.max(0.0).min(180.0);
-        Slider::new(self.f_pan, 0.0, 180.0)
+        if let Some(new_pan) = Slider::new(self.f_pan, 0.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 425.0, (ui.win_h / 2.0) - 425.0)
             .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
+            .border(1.0)
             .label("Pan")
             .label_color(WHITE)
-            .react(|new_pan| {
-                self.try_update_f_pan(new_pan);
-            })
-            .set(F_PAN_SLIDER, ui);
+            .set(F_PAN_SLIDER, ui)
+        {
+            self.try_update_f_pan(new_pan);
+        }
 
         // Camera tilt slider
         self.f_tilt = self.f_tilt.max(60.0).min(180.0);
-        Slider::new(self.f_tilt, 60.0, 180.0)
+        if let Some(new_tilt) = Slider::new(self.f_tilt, 60.0, 180.0)
             .w_h(150.0, 30.0)
             .x_y((ui.win_w / 2.0) - 270.0, (ui.win_h / 2.0) - 425.0)
             .rgb(0.5, 0.3, 0.6)
-            .frame(1.0)
+            .border(1.0)
             .label("Tilt")
             .label_color(WHITE)
-            .react(|new_tilt| {
-                self.try_update_f_tilt(new_tilt);
-            })
-            .set(F_TILT_SLIDER, ui);
+            .set(F_TILT_SLIDER, ui)
+        {
+            self.try_update_f_tilt(new_tilt);
+        }
 
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y((ui.win_w / 2.0) - 350.0, (ui.win_h / 2.0) - 470.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Snapshot")
-            .react(|| { self.want_snapshot = true; })
-            .set(SNAPSHOT_BUTTON, ui);
+            .set(SNAPSHOT_BUTTON, ui)
+            .was_clicked()
+        {
+            self.want_snapshot = true;
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // SADL
@@ -526,22 +553,30 @@ impl NavigationUi {
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(SADL_LABEL, ui);
-        Button::new()
+        if Button::new()
             .x_y((ui.win_w / 2.0) - 590.0, (ui.win_h / 2.0) - 465.0)
             .w_h(60.0, 30.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Up")
-            .react(|| { self.sadl = 100.0; self.send_sadl(); })
-            .set(SADL_UP, ui);
-        Button::new()
+            .set(SADL_UP, ui)
+            .was_clicked()
+        {
+            self.sadl = 100.0;
+            self.send_sadl();
+        }
+        if Button::new()
             .x_y((ui.win_w / 2.0) - 525.0, (ui.win_h / 2.0) - 465.0)
             .w_h(60.0, 30.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Down")
-            .react(|| { self.sadl = -100.0; self.send_sadl(); })
-            .set(SADL_DOWN, ui);
+            .set(SADL_DOWN, ui)
+            .was_clicked()
+        {
+            self.sadl = -100.0;
+            self.send_sadl();
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Command section
@@ -552,26 +587,33 @@ impl NavigationUi {
             .set(COMMAND_LABEL, ui);
 
         let mut should_send_command = false;
-        TextBox::new(&mut self.command)
-            .enabled(self.command_mode)
+        for event in TextBox::new(&mut self.command)
+            //.enable(self.command_mode)
             .font_size(16)
             .w_h(320.0, 20.0)
             .x_y(165.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
-            .frame(1.0)
-            .frame_color(self.bg_color.invert().plain_contrast())
+            .border(1.0)
+            .border_color(self.bg_color.invert().plain_contrast())
             .color(self.bg_color.invert())
-            .react(|_string: &mut String| { should_send_command = true; })
-            .set(COMMAND_INPUT, ui);
-        if should_send_command { self.send_command(); }
+            .set(COMMAND_INPUT, ui)
+        {
+            match event {
+                widget::text_box::Event::Enter => self.send_command(),
+                _ => { },
+            }
+        }
 
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 640.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Send")
-            .react(|| { self.send_command(); })
-            .set(SEND_COMMAND_BUTTON, ui);
+            .set(SEND_COMMAND_BUTTON, ui)
+            .was_clicked()
+        {
+            self.send_command();
+        }
 
         let mode_label =
             match self.command_mode {
@@ -583,14 +625,27 @@ impl NavigationUi {
             .font_size(22)
             .color(self.bg_color.plain_contrast())
             .set(MODE_LABEL, ui);
-        Button::new()
+        if Button::new()
             .w_h(150.0, 30.0)
             .x_y(380.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 675.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Toggle Mode")
-            .react(|| { self.command_mode = !self.command_mode; })
-            .set(MODE_TOGGLE_BUTTON, ui);
+            .set(MODE_TOGGLE_BUTTON, ui)
+            .was_clicked()
+        {
+            self.command_mode = !self.command_mode;
+        }
+        
+        for (i, mut edit) in (0..self.command_history.len()).zip(TextEdit::new("")
+            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 675.0)
+            .w_h(200.0, 300.0)
+            .color(LIGHT_BLUE)
+            .line_spacing(2.5)
+            .set(COMMAND_HISTORY, ui))
+        {
+            edit = self.command_history[i].clone();
+        }
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -916,6 +971,8 @@ fn gps_degrees_to_dms(degrees: f64) -> (i32, i32, f64) {
 }
 
 widget_ids! {
+    CANVAS,
+
     LOCAL_TIME,
     UTC_TIME,
     MISSION_TIME_LABEL,
@@ -952,6 +1009,7 @@ widget_ids! {
     F_TILT_SLIDER,
     SNAPSHOT_BUTTON,
 
+    COMMAND_HISTORY,
     COMMAND_LABEL,
     COMMAND_INPUT,
     SEND_COMMAND_BUTTON,

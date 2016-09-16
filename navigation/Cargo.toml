@@ -1,23 +1,22 @@
 [package]
+authors = ["Theodore DeRego <tderego94@gmail.com>"]
 name = "rover-gui"
 version = "0.1.0"
-authors = ["Theodore DeRego <tderego94@gmail.com>"]
 
 [[bin]]
-
-name="navigation"
-path="../src/navigation.rs"
-
-[dependencies.ffmpeg]
-git = "https://github.com/meh/rust-ffmpeg"
-features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
-default-features = false
+name = "navigation"
+path = "../src/navigation.rs"
 
 [dependencies]
-
+conrod = "0.40.0"
+gfx_device_gl = "0.11.2"
+image = "0.10.3"
+piston2d-gfx_graphics = "0.31.2"
+piston2d-graphics = "0.17.0"
+piston_window = "0.51.0"
 time = "0.1.*"
-image = "0.9.0"
 
-piston_window = "0.43.0"
-piston2d-graphics = "0.16.0"
-conrod = "0.34.0"
+[dependencies.ffmpeg]
+default-features = false
+features = ["codec", "device", "filter", "format", "postprocessing", "software-resampling", "software-scaling"]
+git = "https://github.com/meh/rust-ffmpeg"

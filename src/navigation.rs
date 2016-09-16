@@ -12,6 +12,8 @@ extern crate time;
 extern crate piston_window;
 extern crate graphics;
 extern crate image;
+extern crate gfx_graphics;
+extern crate gfx_device_gl;
 #[macro_use] extern crate conrod;
 #[macro_use] extern crate ffmpeg;
 
@@ -36,12 +38,14 @@ fn main() {
                                                            [1280, 700]).exit_on_esc(true)
                                                                        .build().unwrap();
 
+    let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
+    let mut glyph_cache = conrod::backend::piston_window::GlyphCache::new(window, 1280, 700);
     let mut ui = {
-        let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
         let theme = Theme::default();
-        let glyph_cache = Glyphs::new(&font_path, window.factory.clone());
-        Ui::new(glyph_cache.unwrap(), theme)
+        conrod::UiBuilder::new().theme(theme).build()
     };
+
+    ui.fonts.insert_from_file(font_path).unwrap();
     
     // Create a UDP socket to talk to the rover
     let client = UdpSocket::bind("0.0.0.0:30002").unwrap();
@@ -111,7 +115,10 @@ fn main() {
     while let Some(e) = window.next() {
         use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent, MouseCursorEvent};
 
-        ui.handle_event(&e);
+        // Convert the piston event to a conrod event.
+        if let Some(e) = conrod::backend::piston_window::convert_event(e.clone(), window) {
+            ui.handle_event(e);
+        }
 
         e.mouse_cursor(|x, y| {
             mouse_x = x;
@@ -183,11 +190,7 @@ fn main() {
         window.draw_2d(&e, |c, g| {
             use graphics::*;
 
-            ui.set_widgets(|ref mut ui| {
-                nav_ui.set_widgets(ui);
-            });
-
-            nav_ui.draw_ui(c, g, &mut ui);
+            nav_ui.draw_ui(c, g, &mut glyph_cache, &mut ui);
 
             Rectangle::new([0.0, 0.0, 0.4, 1.0])
                 .draw([1280.0 - 700.0 - 5.0, 5.0, 700.0, 400.0],
