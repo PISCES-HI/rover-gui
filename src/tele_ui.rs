@@ -4,19 +4,24 @@ use std::io::{BufWriter, Write};
 
 use conrod::{
     self,
-    Background,
-    Button,
     Color,
+
+    Borderable,
     Colorable,
-    Frameable,
     Labelable,
     Positionable,
     Sizeable,
+};
+use conrod::widget::{
+    self,
+    Button,
     Text,
     Widget,
 };
 use conrod::color::rgb;
 use graphics::{Context, Graphics};
+use gfx_graphics;
+use gfx_device_gl;
 use piston_window;
 use time;
 
@@ -106,6 +111,7 @@ pub struct TelemetryUi {
     pitch_roll_heading: Option<(f64, f64, f64)>,
 
     log_files: HashMap<String, BufWriter<File>>,
+    image_map: conrod::image::Map<<piston_window::G2d<'static> as Graphics>::Texture>,
 }
 
 impl TelemetryUi {
@@ -203,6 +209,7 @@ impl TelemetryUi {
             pitch_roll_heading: None,
 
             log_files: log_files,
+            image_map: conrod::image::Map::new(),
         }
     }
 
@@ -236,28 +243,34 @@ impl TelemetryUi {
                self.altitude, self.temp).unwrap();
     }
 
-    pub fn draw_ui<'a, G>(&mut self, c: Context, g: &mut G, ui: &mut conrod_config::Ui)
-                          where G: Graphics<Texture=<piston_window::G2d<'static> as conrod::Graphics>::Texture> {
-        use graphics::{Transformed};
+    pub fn draw_ui<'a>(&mut self, c: Context,
+                          g: &mut gfx_graphics::GfxGraphics<'a, gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+                          glyph_cache: &mut conrod::backend::piston_window::GlyphCache,
+                          char_cache: &mut piston_window::Glyphs,
+                          ui: &mut conrod_config::Ui) {
+        use graphics::Transformed;
 
-        // Draw the background.
-        Background::new().color(self.bg_color).set(ui);
-
-        ui.set_widgets(|ref mut ui| {
-            self.set_widgets(ui);
-        });
+        self.set_widgets(&mut ui.set_widgets());
 
         // Draw our UI!
-        ui.draw(c, g);
+        conrod::backend::piston_window::draw(c, g, ui.draw(),
+                                             glyph_cache,
+                                             &self.image_map,
+                                             |img| img);
 
-        self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), g, &mut *ui.glyph_cache.borrow_mut());
-        self.avionics_temp_graph.draw(c.trans(ui.win_w - 405.0, 185.0), g, &mut *ui.glyph_cache.borrow_mut());
-        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), g, &mut *ui.glyph_cache.borrow_mut());
-        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), g, &mut *ui.glyph_cache.borrow_mut());
+        self.v48_graph.draw(c.trans(ui.win_w - 405.0, 5.0), g, char_cache);
+        self.avionics_temp_graph.draw(c.trans(ui.win_w - 405.0, 185.0), g, char_cache);
+        self.v12_graph.draw(c.trans(ui.win_w - 405.0, 365.0), g, char_cache);
+        self.motor_temp_graph.draw(c.trans(ui.win_w - 405.0, 545.0), g, char_cache);
     }
 
     pub fn set_widgets(&mut self, ui: &mut conrod_config::UiCell) {
         let time_now = time::now();
+
+        // Draw the background.
+        widget::Canvas::new()
+            .color(self.bg_color)
+            .set(CANVAS, ui);
 
         // Local time
         Text::new(format!("{}", time_now.strftime("Local  %x  %X").unwrap()).as_str())
@@ -301,35 +314,37 @@ impl TelemetryUi {
                 MissionTime::Paused(_) => "Start",
                 MissionTime::Running(_, _) => "Pause",
             };
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y((-ui.win_w / 2.0) + 55.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label(mission_start_text)
-            .react(|| {
-                match self.mission_time {
-                    MissionTime::Paused(current_time) => {
-                        self.mission_time = MissionTime::Running(time::now(), current_time);
-                    },
-                    MissionTime::Running(start_time, extra_time) => {
-                        self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
-                    },
-                };
-            })
-            .set(MISSION_START_BUTTON, ui);
+            .set(MISSION_START_BUTTON, ui)
+            .was_clicked()
+        {
+            match self.mission_time {
+                MissionTime::Paused(current_time) => {
+                    self.mission_time = MissionTime::Running(time::now(), current_time);
+                },
+                MissionTime::Running(start_time, extra_time) => {
+                    self.mission_time = MissionTime::Paused((time::now() - start_time) + extra_time);
+                },
+            };
+        }
 
         // Mission reset button
-        Button::new()
+        if Button::new()
             .w_h(100.0, 30.0)
             .x_y((-ui.win_w / 2.0) + 160.0, (ui.win_h / 2.0) - 100.0)
             .rgb(0.3, 0.8, 0.3)
-            .frame(1.0)
+            .border(1.0)
             .label("Reset")
-            .react(|| {
-                self.mission_time = MissionTime::Paused(time::Duration::zero());
-            })
-            .set(MISSION_RESET_BUTTON, ui);
+            .set(MISSION_RESET_BUTTON, ui)
+            .was_clicked()
+        {
+            self.mission_time = MissionTime::Paused(time::Duration::zero());
+        }
 
         // Time delay
         Text::new("Time Delay: 0s")
@@ -924,6 +939,8 @@ fn gps_degrees_to_dms(degrees: f64) -> (i32, i32, f64) {
 }
 
 widget_ids! {
+    CANVAS,
+
     // Widget IDs
     LOCAL_TIME,
     UTC_TIME,

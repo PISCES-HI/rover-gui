@@ -10,7 +10,9 @@ path="../src/telemetry.rs"
 
 [dependencies]
 
+conrod = "0.40.0"
+gfx_device_gl = "0.11.2"
+piston2d-gfx_graphics = "0.31.2"
+piston2d-graphics = "0.17.0"
+piston_window = "0.51.0"
 time = "0.1.*"
-piston_window = "0.43.0"
-piston2d-graphics = "0.16.0"
-conrod = "0.34.0"

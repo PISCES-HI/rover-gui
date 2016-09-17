@@ -1,23 +1,22 @@
-#![feature(iter_arith)]
-
 use std::fs;
 use std::net::UdpSocket;
 use std::path::Path;
 use std::sync::mpsc::channel;
 use std::thread;
 
-#[macro_use]
-extern crate conrod;
+
 extern crate time;
-extern crate graphics;
 extern crate piston_window;
+extern crate graphics;
+extern crate gfx_graphics;
+extern crate gfx_device_gl;
+#[macro_use] extern crate conrod;
 
 use conrod::{
     Theme,
 };
 use piston_window::{EventLoop, Glyphs, PistonWindow, WindowSettings};
 
-use conrod_config::Ui;
 use tele_ui::TelemetryUi;
 
 pub mod avg_val;
@@ -26,16 +25,20 @@ pub mod line_graph;
 pub mod tele_ui;
 
 fn main() {
-    let mut window: PistonWindow = WindowSettings::new("PISCES Telemetry".to_string(),
-                                                       [1280, 700]).exit_on_esc(true)
-                                                                   .build().unwrap();
+    let ref mut window: PistonWindow = WindowSettings::new("PISCES Telemetry".to_string(),
+                                                           [1280, 700]).exit_on_esc(true)
+                                                                       .build().unwrap();
 
+    let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
+    let mut glyph_cache = conrod::backend::piston_window::GlyphCache::new(window, 1280, 700);
     let mut ui = {
-        let font_path = Path::new("./assets/fonts/NotoSans-Regular.ttf");
         let theme = Theme::default();
-        let glyph_cache = Glyphs::new(&font_path, window.factory.clone());
-        Ui::new(glyph_cache.unwrap(), theme)
+        conrod::UiBuilder::new().theme(theme).build()
     };
+
+    ui.fonts.insert_from_file(font_path).unwrap();
+
+    let mut char_cache = Glyphs::new(&font_path, window.factory.clone()).unwrap();
     
     // Create a UDP socket to talk to the rover
     let socket = UdpSocket::bind("0.0.0.0:30001").ok().expect("Failed to open UDP socket");
@@ -70,7 +73,10 @@ fn main() {
     while let Some(e) = window.next() {
         use piston_window::{Button, PressEvent, ReleaseEvent, UpdateEvent};
 
-        ui.handle_event(&e);
+        // Convert the piston event to a conrod event.
+        if let Some(e) = conrod::backend::piston_window::convert_event(e.clone(), window) {
+            ui.handle_event(e);
+        }
         
         e.press(|button| {
             match button {
@@ -101,7 +107,7 @@ fn main() {
         
         // Render GUI
         window.draw_2d(&e, |c, g| {
-            tele_ui.draw_ui(c, g, &mut ui);
+            tele_ui.draw_ui(c, g, &mut glyph_cache, &mut char_cache, &mut ui);
         });
     }
 }
