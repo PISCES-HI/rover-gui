@@ -299,9 +299,14 @@ impl NavigationUi {
             .set(TIME_DELAY_VALUE, ui)
         {
             match event {
-                widget::text_box::Event::Enter => self.delay = time::Duration::seconds(self.delay_str.parse().unwrap()),
-                //widget::text_box::Event::Update(string) => *text = string,
-                _ => { },
+                widget::text_box::Event::Enter => {
+                    if self.command_mode {
+                        if let Ok(delay) = self.delay_str.parse() {
+                            self.delay = time::Duration::seconds(delay);
+                        }
+                    }
+                },
+                widget::text_box::Event::Update(string) => self.delay_str = string,
             }
         }
 
@@ -735,7 +740,6 @@ impl NavigationUi {
             }
             Up => {
                 // Forward
-                println!("foo");
                 self.l_rpm = 100.0*self.motor_speed;
                 self.r_rpm = 100.0*self.motor_speed;
                 self.send_lr_rpm();
