@@ -26,7 +26,7 @@ use conrod::widget::{
     TextEdit,
     Widget,
 };
-use conrod::color::{rgb, WHITE, LIGHT_BLUE};
+use conrod::color::{rgb, WHITE, LIGHT_BLUE, BLUE};
 use graphics::{Context, Graphics};
 use gfx_graphics;
 use gfx_device_gl;
@@ -599,7 +599,8 @@ impl NavigationUi {
         {
             match event {
                 widget::text_box::Event::Enter => self.send_command(),
-                _ => { },
+                widget::text_box::Event::Update(string) => self.command = string,
+                //_ => { },
             }
         }
 
@@ -636,16 +637,22 @@ impl NavigationUi {
         {
             self.command_mode = !self.command_mode;
         }
-        
-        for (i, mut edit) in (0..self.command_history.len()).zip(TextEdit::new("")
-            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 675.0)
-            .w_h(200.0, 300.0)
-            .color(LIGHT_BLUE)
-            .line_spacing(2.5)
-            .set(COMMAND_HISTORY, ui))
-        {
-            edit = self.command_history[i].clone();
+
+        let (mut items, scrollbar) = widget::List::new(self.command_history.len(), 30.0)
+            .x_y(200.0 - (ui.win_w / 2.0), (ui.win_h / 2.0) - 480.0)
+            .w_h(200.0, 200.0)
+            .scrollbar_next_to()
+            .set(COMMAND_HISTORY, ui);
+
+        while let Some(item) = items.next(ui) {
+            let i = item.i;
+            let text = Text::new(&self.command_history[self.command_history.len() - i - 1])
+                .color(WHITE)
+                .align_text_left();
+            item.set(text, ui);
         }
+
+        if let Some(s) = scrollbar { s.set(ui) }
     }
 
     pub fn handle_packet(&mut self, packet: String) {
@@ -927,6 +934,8 @@ impl NavigationUi {
         let packet = format!("Z{}|{}|", self.command.to_uppercase(), self.motor_speed);
         let delay = self.delay;
         self.queue_packet(delay, packet.into_bytes(), ("10.10.153.8".to_string(), 30001));
+
+        self.command_history.push(self.command.clone());
     }
 
     pub fn queue_packet(&mut self, delay: time::Duration, mut data: Vec<u8>, addr: (String, u16)) {
